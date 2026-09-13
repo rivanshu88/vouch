@@ -162,6 +162,7 @@ export interface AssessmentAttempt {
   passed?: boolean;
   integrityScore?: number;
   consistencyBreakdown?: ConsistencyBreakdown;
+  rawEvents?: (RawIntegrityEvent | AssessmentEvent)[];
   status: "in_progress" | "submitted" | "expired";
 }
 
@@ -197,19 +198,52 @@ export interface AssessmentEvent {
   metadata?: Record<string, unknown>;
 }
 
+export type RawIntegrityEventType =
+  | "tab_switch"
+  | "window_blur"
+  | "clipboard"
+  | "fullscreen_exit"
+  | "question_navigation"
+  | "answer_revision";
+
+export interface RawIntegrityEvent {
+  type: RawIntegrityEventType;
+  timestamp: number; // epoch ms
+  questionId?: string;
+  meta?: Record<string, unknown>;
+}
+
+export interface ConsistencyCategoryDeductions {
+  tabSwitches: number;
+  clipboard: number;
+  fullscreenExits: number;
+  timingAnomalies: number;
+  excessiveRevisions: number;
+  timingMismatch?: number;
+}
+
+export interface BehavioralSignal {
+  title: string;
+  description: string;
+  level: "positive" | "neutral" | "warning";
+  timestamp?: string;
+  pointsDeducted?: number;
+}
+
 export interface ConsistencyBreakdown {
   score: number; // 0 - 100
   timingAnomalies: number;
   tabSwitches: number;
   clipboardAttempts: number;
+  fullscreenExits?: number;
+  excessiveRevisions?: number;
+  timingMismatch?: number;
   answerChanges: number;
   difficultyTimeCorrelation: "Normal" | "Unusual" | "Uniform";
   disclaimer: string;
-  signals: {
-    title: string;
-    description: string;
-    level: "positive" | "neutral" | "warning";
-  }[];
+  breakdown?: ConsistencyCategoryDeductions;
+  deductions?: ConsistencyCategoryDeductions;
+  signals: BehavioralSignal[];
 }
 
 export interface EvidenceStrengthBreakdown {
@@ -265,6 +299,7 @@ export interface TeamJoinRequest {
   candidateName?: string;
   candidateCollege?: string;
   candidateSkills?: CandidateSkill[];
+  message?: string;
   status: "pending" | "accepted" | "rejected";
   createdAt: string;
   resolvedAt?: string;

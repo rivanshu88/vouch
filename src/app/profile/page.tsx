@@ -15,6 +15,7 @@ import {
   ArrowRight,
   Code2,
   HelpCircle,
+  Sparkles,
 } from "lucide-react";
 import { SkillBadge } from "@/components/SkillBadge";
 import { EvidenceScoreCard } from "@/components/EvidenceScoreCard";
@@ -22,9 +23,14 @@ import { VerifiedBadge } from "@/components/ui/VerifiedBadge";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { CandidateProfile, CandidateSkill, Certificate, Project, Skill } from "@/types";
 
+import { useAuth, DEMO_PERSONAS } from "@/lib/auth/auth-context";
+import { AlertCircle } from "lucide-react";
+
 export default function ProfilePage() {
+  const { user, loading: authLoading, isAuthenticated, loginWithPersona } = useAuth();
   const [profileData, setProfileData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [skillsList, setSkillsList] = useState<Skill[]>([]);
 
   // Modals / Form toggles
@@ -51,14 +57,25 @@ export default function ProfilePage() {
   const [syncingGh, setSyncingGh] = useState(false);
 
   const loadData = async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
     try {
+      const activeId = user.id || "usr-01";
       const [profRes, skillsRes] = await Promise.all([
-        fetch("/api/profile?id=usr-01"),
+        fetch(`/api/profile?id=${activeId}`),
         fetch("/api/skills"),
       ]);
 
       const profJson = await profRes.json();
       const skillsJson = await skillsRes.json();
+
+      if (!profJson.success && profRes.status !== 200) {
+        throw new Error(profJson.error?.message || "Failed to load candidate profile.");
+      }
 
       if (profJson.success) {
         setProfileData(profJson.data);
@@ -67,25 +84,33 @@ export default function ProfilePage() {
         }
       }
       if (skillsJson.success) setSkillsList(skillsJson.data);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      setError(err?.message || "Failed to load profile evidence.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (!authLoading) {
+      if (isAuthenticated) {
+        loadData();
+      } else {
+        setLoading(false);
+      }
+    }
+  }, [authLoading, isAuthenticated, user?.id]);
 
   const handleAddSkill = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const activeId = user?.id || "usr-01";
       const res = await fetch("/api/profile/skills", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          candidateId: "usr-01",
+          candidateId: activeId,
           skillId: skillForm.skillId,
           declaredLevel: skillForm.declaredLevel,
         }),
@@ -100,11 +125,12 @@ export default function ProfilePage() {
   const handleAddProject = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const activeId = user?.id || "usr-01";
       const res = await fetch("/api/profile/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          candidateId: "usr-01",
+          candidateId: activeId,
           title: projectForm.title,
           description: projectForm.description,
           technologies: projectForm.technologies.split(",").map((t) => t.trim()),
@@ -123,11 +149,12 @@ export default function ProfilePage() {
   const handleAddCert = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
+      const activeId = user?.id || "usr-01";
       const res = await fetch("/api/profile/certificates", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          candidateId: "usr-01",
+          candidateId: activeId,
           title: certForm.title,
           issuer: certForm.issuer,
           issueDate: certForm.issueDate,
@@ -146,11 +173,12 @@ export default function ProfilePage() {
     if (!ghUsername) return;
     setSyncingGh(true);
     try {
+      const activeId = user?.id || "usr-01";
       const res = await fetch("/api/github/sync", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          candidateId: "usr-01",
+          candidateId: activeId,
           username: ghUsername,
         }),
       });
@@ -162,12 +190,114 @@ export default function ProfilePage() {
     }
   };
 
-  if (loading) {
+  // 1. Loading State
+  if (authLoading || (loading && isAuthenticated)) {
     return (
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
         <div className="animate-pulse space-y-6">
           <div className="h-44 rounded-xl bg-zinc-200"></div>
           <div className="h-72 rounded-xl bg-zinc-200"></div>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Logged Out State (Clear prompt, never a silent blank page)
+  if (!isAuthenticated) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
+        <div className="rounded-2xl border border-zinc-200 bg-white p-8 sm:p-12 shadow-xs text-center max-w-3xl mx-auto space-y-6">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-950 text-white shadow-md shadow-zinc-900/10">
+            <ShieldCheck className="h-8 w-8 text-sky-400" />
+          </div>
+
+          <div>
+            <span className="rounded bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-800 uppercase tracking-wider">
+              Profile Evidence
+            </span>
+            <h1 className="mt-3 text-2xl sm:text-3xl font-bold tracking-tight text-zinc-950">
+              Sign in to view Candidate Profile & Evidence
+            </h1>
+            <p className="mt-2 text-xs sm:text-sm text-zinc-600 max-w-xl mx-auto leading-relaxed">
+              Manage your technical skill registry, sync GitHub commit metrics, upload verified certificates, and showcase real project artifacts.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <Link
+              href="/login"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-zinc-950 px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-zinc-800 transition"
+            >
+              <span>Sign In to Account</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+            <Link
+              href="/register"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-5 py-2.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 transition"
+            >
+              Create Account
+            </Link>
+          </div>
+
+          {/* 1-Click Evaluation Demo Personas */}
+          <div className="mt-8 pt-8 border-t border-zinc-100 text-left">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+                Or Instant 1-Click Demo Evaluation:
+              </span>
+              <span className="inline-flex items-center gap-1 rounded bg-sky-50 px-1.5 py-0.5 text-[10px] font-medium text-sky-700">
+                <Sparkles className="h-3 w-3" /> Quick Switch
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {DEMO_PERSONAS.slice(0, 3).map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => loginWithPersona(p.id)}
+                  className="rounded-xl border border-zinc-200 bg-zinc-50/60 p-3.5 text-left hover:border-sky-300 hover:bg-sky-50/50 transition shadow-2xs group"
+                >
+                  <div className="flex items-center gap-2">
+                    <img
+                      src={p.avatarUrl}
+                      alt={p.name}
+                      className="h-8 w-8 rounded-full object-cover border border-zinc-200"
+                    />
+                    <div>
+                      <p className="font-semibold text-xs text-zinc-950 group-hover:text-sky-900">{p.name}</p>
+                      <p className="text-[10px] text-zinc-500 capitalize">{p.role.replace("_", " ")}</p>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-zinc-600 mt-2 line-clamp-2">{p.description}</p>
+                  <span className="inline-block mt-2 text-[10px] font-semibold text-sky-600">
+                    View Profile →
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. Error State (Never silent fail)
+  if (error) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
+        <div className="rounded-xl border border-rose-200 bg-rose-50/60 p-6 text-center max-w-lg mx-auto space-y-4 shadow-xs">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-600">
+            <AlertCircle className="h-6 w-6" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-rose-950">Unable to Load Profile</h2>
+            <p className="text-xs text-rose-700 mt-1">{error}</p>
+          </div>
+          <button
+            onClick={loadData}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-rose-700 px-4 py-2 text-xs font-semibold text-white hover:bg-rose-800 transition"
+          >
+            Retry Connection
+          </button>
         </div>
       </div>
     );
@@ -323,18 +453,27 @@ export default function ProfilePage() {
                 Verified Skills ({verifiedSkills.length})
               </h3>
             </div>
-            <div className="flex flex-wrap gap-2.5">
-              {verifiedSkills.map((s: CandidateSkill) => (
-                <SkillBadge
-                  key={s.id}
-                  name={s.skillName || s.skillId}
-                  level={s.declaredLevel}
-                  verified={true}
-                  score={s.verificationScore}
-                  size="lg"
-                />
-              ))}
-            </div>
+            {verifiedSkills.length === 0 ? (
+              <EmptyState
+                title="No verified skills yet"
+                description="Complete standardized blueprint assessments to prove your technical competence and earn verified badges."
+                actionLabel="Take Skill Assessment"
+                onAction={() => (window.location.href = "/assessments")}
+              />
+            ) : (
+              <div className="flex flex-wrap gap-2.5">
+                {verifiedSkills.map((s: CandidateSkill) => (
+                  <SkillBadge
+                    key={s.id}
+                    name={s.skillName || s.skillId}
+                    level={s.declaredLevel}
+                    verified={true}
+                    score={s.verificationScore}
+                    size="lg"
+                  />
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Declared Claims Partition */}
@@ -557,7 +696,12 @@ export default function ProfilePage() {
 
           <div className="space-y-3">
             {projects?.length === 0 ? (
-              <p className="text-xs text-zinc-400 text-center py-6">No projects recorded yet.</p>
+              <EmptyState
+                title="No technical projects recorded yet"
+                description="Showcase real projects and GitHub repositories to strengthen your evidence score."
+                actionLabel="Add Project"
+                onAction={() => setShowAddProject(true)}
+              />
             ) : (
               projects?.map((p: Project) => (
                 <div key={p.id} className="rounded-lg border border-zinc-200 p-3.5 bg-zinc-50/40 hover:bg-zinc-50/70 transition-colors">
@@ -635,7 +779,12 @@ export default function ProfilePage() {
 
           <div className="space-y-3">
             {certificates?.length === 0 ? (
-              <p className="text-xs text-zinc-400 text-center py-6">No certificates recorded yet.</p>
+              <EmptyState
+                title="No certificates linked yet"
+                description="Attach cloud credentials, hackathon honors, or certificates to enrich your evidence profile."
+                actionLabel="Add Certificate"
+                onAction={() => setShowAddCert(true)}
+              />
             ) : (
               certificates?.map((c: Certificate) => (
                 <div key={c.id} className="rounded-lg border border-zinc-200 p-3.5 bg-zinc-50/40 hover:bg-zinc-50/70 transition-colors">

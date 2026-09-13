@@ -2,15 +2,15 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { AssessmentAttempt, AssessmentAnswer, SanitizedQuestion } from "@/types";
+import { useIntegrityTracking } from "@/hooks/useIntegrityTracking";
 import {
   Clock,
   ChevronRight,
   ChevronLeft,
   Send,
   ShieldCheck,
-  CheckCircle2,
-  AlertCircle,
-  HelpCircle,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 
 interface AssessmentRunnerProps {
@@ -20,62 +20,31 @@ interface AssessmentRunnerProps {
 
 export function AssessmentRunner({ attempt, onCompleted }: AssessmentRunnerProps) {
   const [currentIdx, setCurrentIdx] = useState(0);
-  const [answers, setAnswers] = useState<Record<string, { selectedOptionId: string; timeSpentMs: number; changeCount: number }>>({});
+  const [answers, setAnswers] = useState<
+    Record<string, { selectedOptionId: string; timeSpentMs: number; changeCount: number }>
+  >({});
   const [remainingSeconds, setRemainingSeconds] = useState(attempt.durationSeconds || 300);
   const [submitting, setSubmitting] = useState(false);
-  const [integrityEventsCount, setIntegrityEventsCount] = useState(0);
 
   const questionStartTimeRef = useRef<number>(Date.now());
-
   const questions: SanitizedQuestion[] = attempt.questions || [];
   const currentQuestion = questions[currentIdx];
 
-  // Helper to record integrity events
-  const recordIntegrityEvent = async (type: string, metadata: any = {}) => {
-    setIntegrityEventsCount((c) => c + 1);
-    try {
-      await fetch(`/api/assessments/${attempt.id}/events`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type,
-          timestamp: new Date().toISOString(),
-          questionId: currentQuestion?.id,
-          metadata,
-        }),
-      });
-    } catch {}
-  };
-
-  // Setup Browser Event Listeners
-  useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        recordIntegrityEvent("TAB_HIDDEN");
-      } else {
-        recordIntegrityEvent("TAB_VISIBLE");
-      }
-    };
-
-    const handleBlur = () => recordIntegrityEvent("WINDOW_BLUR");
-    const handleFocus = () => recordIntegrityEvent("WINDOW_FOCUS");
-    const handleCopy = () => recordIntegrityEvent("COPY_ATTEMPT");
-    const handlePaste = () => recordIntegrityEvent("PASTE_ATTEMPT");
-
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    window.addEventListener("blur", handleBlur);
-    window.addEventListener("focus", handleFocus);
-    window.addEventListener("copy", handleCopy);
-    window.addEventListener("paste", handlePaste);
-
-    return () => {
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
-      window.removeEventListener("blur", handleBlur);
-      window.removeEventListener("focus", handleFocus);
-      window.removeEventListener("copy", handleCopy);
-      window.removeEventListener("paste", handlePaste);
-    };
-  }, [attempt.id, currentQuestion?.id]);
+  // Wire up the live assessment integrity capture hook
+  const {
+    containerRef,
+    eventsCount,
+    isFullscreen,
+    requestFullscreen,
+    recordQuestionNavigation,
+    recordAnswerRevision,
+    getRawEvents,
+  } = useIntegrityTracking({
+    attemptId: attempt.id,
+    currentQuestionId: currentQuestion?.id,
+    currentQuestionIndex: currentIdx,
+    enabled: !submitting,
+  });
 
   const handleSelectOption = (optionId: string) => {
     if (!currentQuestion) return;
@@ -88,7 +57,7 @@ export function AssessmentRunner({ attempt, onCompleted }: AssessmentRunnerProps
     const newChangeCount = existing ? existing.changeCount + 1 : 0;
 
     if (existing && existing.selectedOptionId !== optionId) {
-      recordIntegrityEvent("ANSWER_CHANGED", { from: existing.selectedOptionId, to: optionId });
+      recordAnswerRevision(qId, existing.selectedOptionId, optionId);
     }
 
     setAnswers((prev) => ({
@@ -105,14 +74,27 @@ export function AssessmentRunner({ attempt, onCompleted }: AssessmentRunnerProps
 
   const handleNext = () => {
     if (currentIdx < questions.length - 1) {
-      setCurrentIdx((i) => i + 1);
+      const nextIdx = currentIdx + 1;
+      recordQuestionNavigation(currentIdx, nextIdx, "forward", currentQuestion?.id);
+      setCurrentIdx(nextIdx);
       questionStartTimeRef.current = Date.now();
     }
   };
 
   const handlePrev = () => {
     if (currentIdx > 0) {
-      setCurrentIdx((i) => i - 1);
+      const prevIdx = currentIdx - 1;
+      recordQuestionNavigation(currentIdx, prevIdx, "back", currentQuestion?.id);
+      setCurrentIdx(prevIdx);
+      questionStartTimeRef.current = Date.now();
+    }
+  };
+
+  const handleJump = (targetIdx: number) => {
+    if (targetIdx !== currentIdx && targetIdx >= 0 && targetIdx < questions.length) {
+      const dir = targetIdx > currentIdx ? "forward" : "back";
+      recordQuestionNavigation(currentIdx, targetIdx, dir, currentQuestion?.id);
+      setCurrentIdx(targetIdx);
       questionStartTimeRef.current = Date.now();
     }
   };
@@ -121,23 +103,41 @@ export function AssessmentRunner({ attempt, onCompleted }: AssessmentRunnerProps
     if (submitting) return;
     setSubmitting(true);
 
+    const now = Date.now();
+    const lastQuestionElapsed = now - questionStartTimeRef.current;
+
+    const updatedAnswers = { ...answers };
+    if (currentQuestion) {
+      const currentAns = updatedAnswers[currentQuestion.id];
+      updatedAnswers[currentQuestion.id] = {
+        selectedOptionId: currentAns?.selectedOptionId || "",
+        timeSpentMs: (currentAns?.timeSpentMs || 0) + lastQuestionElapsed,
+        changeCount: currentAns?.changeCount || 0,
+      };
+    }
+
     const formattedAnswers: AssessmentAnswer[] = questions.map((q) => {
-      const recorded = answers[q.id];
+      const recorded = updatedAnswers[q.id];
       return {
         id: `ans-${q.id}`,
         attemptId: attempt.id,
         questionId: q.id,
         selectedOptionId: recorded?.selectedOptionId,
-        timeSpentMs: recorded?.timeSpentMs || 6000,
+        timeSpentMs: recorded?.timeSpentMs || 5000,
         answerChangeCount: recorded?.changeCount || 0,
       };
     });
+
+    const rawEvents = getRawEvents();
 
     try {
       const res = await fetch(`/api/assessments/${attempt.id}/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ answers: formattedAnswers }),
+        body: JSON.stringify({
+          answers: formattedAnswers,
+          events: rawEvents,
+        }),
       });
       const data = await res.json();
       if (data.success) {
@@ -152,7 +152,7 @@ export function AssessmentRunner({ attempt, onCompleted }: AssessmentRunnerProps
     }
   };
 
-  // Keyboard shortcut listener for A, B, C, D or 1, 2, 3, 4
+  // Keyboard navigation listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!currentQuestion) return;
@@ -197,8 +197,6 @@ export function AssessmentRunner({ attempt, onCompleted }: AssessmentRunnerProps
     return `${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   };
 
-  const answeredCount = Object.keys(answers).length;
-
   if (!currentQuestion) {
     return <div className="p-12 text-center text-xs text-zinc-500">Preparing assessment blueprint...</div>;
   }
@@ -206,7 +204,7 @@ export function AssessmentRunner({ attempt, onCompleted }: AssessmentRunnerProps
   const selectedForCurrent = answers[currentQuestion.id]?.selectedOptionId;
 
   return (
-    <div className="mx-auto max-w-3xl space-y-5">
+    <div ref={containerRef} className="mx-auto max-w-3xl space-y-5">
       {/* Assessment Header Control Bar */}
       <div className="rounded-xl border border-zinc-200/90 bg-white p-4 shadow-2xs flex items-center justify-between">
         <div>
@@ -219,12 +217,32 @@ export function AssessmentRunner({ attempt, onCompleted }: AssessmentRunnerProps
             </span>
           </div>
           <p className="text-[11px] text-zinc-500 mt-0.5">
-            Question {currentIdx + 1} of {questions.length} · Topic: <span className="font-medium text-zinc-700">{currentQuestion.topic}</span>
+            Question {currentIdx + 1} of {questions.length} · Topic:{" "}
+            <span className="font-medium text-zinc-700">{currentQuestion.topic}</span>
           </p>
         </div>
 
-        {/* Timer & Finish button */}
-        <div className="flex items-center gap-3">
+        {/* Timer, Fullscreen toggle & Submit button */}
+        <div className="flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={requestFullscreen}
+            title={isFullscreen ? "Fullscreen active" : "Enter fullscreen mode"}
+            className="inline-flex items-center gap-1 text-[11px] font-medium text-zinc-600 hover:text-zinc-900 border border-zinc-200/80 bg-zinc-50 hover:bg-zinc-100 px-2.5 py-1.5 rounded-md transition-colors"
+          >
+            {isFullscreen ? (
+              <>
+                <Minimize2 className="h-3 w-3 text-emerald-600" />
+                <span>Fullscreen</span>
+              </>
+            ) : (
+              <>
+                <Maximize2 className="h-3 w-3 text-zinc-500" />
+                <span>Fullscreen</span>
+              </>
+            )}
+          </button>
+
           <div
             className={`flex items-center gap-1.5 font-mono text-xs font-bold px-3 py-1.5 rounded-md border ${
               remainingSeconds < 60
@@ -253,11 +271,20 @@ export function AssessmentRunner({ attempt, onCompleted }: AssessmentRunnerProps
       <div className="rounded-xl border border-zinc-200/90 bg-white p-6 sm:p-8 shadow-2xs">
         {/* Sub-header with Integrity Status */}
         <div className="flex items-center justify-between text-[11px] text-zinc-400 mb-5 pb-3 border-b border-zinc-100">
-          <span className="font-mono">Question {currentIdx + 1} / {questions.length}</span>
-          <span className="flex items-center gap-1.5 font-medium text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">
-            <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-            Assessment Integrity Active
+          <span className="font-mono">
+            Question {currentIdx + 1} / {questions.length}
           </span>
+          <div className="flex items-center gap-2">
+            {eventsCount > 0 && (
+              <span className="font-mono text-[10px] text-zinc-400">
+                {eventsCount} {eventsCount === 1 ? "event" : "events"} recorded
+              </span>
+            )}
+            <span className="flex items-center gap-1.5 font-medium text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200/60">
+              <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+              Assessment Integrity Active
+            </span>
+          </div>
         </div>
 
         {/* Question Prompt */}
@@ -314,10 +341,7 @@ export function AssessmentRunner({ attempt, onCompleted }: AssessmentRunnerProps
               return (
                 <button
                   key={q.id}
-                  onClick={() => {
-                    setCurrentIdx(idx);
-                    questionStartTimeRef.current = Date.now();
-                  }}
+                  onClick={() => handleJump(idx)}
                   className={`h-2.5 w-6 rounded-full transition-all ${
                     isCurrent
                       ? "bg-sky-600 ring-2 ring-sky-200"
@@ -351,7 +375,11 @@ export function AssessmentRunner({ attempt, onCompleted }: AssessmentRunnerProps
         </div>
 
         <p className="mt-3 text-center text-[10px] text-zinc-400">
-          Tip: You can use keyboard keys <kbd className="rounded bg-zinc-100 border px-1 py-0.2 font-mono text-[9px]">A</kbd>, <kbd className="rounded bg-zinc-100 border px-1 py-0.2 font-mono text-[9px]">B</kbd>, <kbd className="rounded bg-zinc-100 border px-1 py-0.2 font-mono text-[9px]">C</kbd>, <kbd className="rounded bg-zinc-100 border px-1 py-0.2 font-mono text-[9px]">D</kbd> or arrow keys to navigate.
+          Tip: You can use keyboard keys{" "}
+          <kbd className="rounded bg-zinc-100 border px-1 py-0.2 font-mono text-[9px]">A</kbd>,{" "}
+          <kbd className="rounded bg-zinc-100 border px-1 py-0.2 font-mono text-[9px]">B</kbd>,{" "}
+          <kbd className="rounded bg-zinc-100 border px-1 py-0.2 font-mono text-[9px]">C</kbd>,{" "}
+          <kbd className="rounded bg-zinc-100 border px-1 py-0.2 font-mono text-[9px]">D</kbd> or arrow keys to navigate.
         </p>
       </div>
     </div>

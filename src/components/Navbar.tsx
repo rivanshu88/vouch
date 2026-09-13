@@ -16,10 +16,12 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { InAppNotification } from "@/types";
+import { useAuth, DEMO_PERSONAS } from "@/lib/auth/auth-context";
+import { LogOut, LogIn } from "lucide-react";
 
 export function Navbar() {
   const pathname = usePathname();
-  const [activeRole, setActiveRole] = useState<"candidate" | "team_leader" | "recruiter">("candidate");
+  const { user, isAuthenticated, loginWithPersona, logout } = useAuth();
   const [notifications, setNotifications] = useState<InAppNotification[]>([]);
   const [showNotifs, setShowNotifs] = useState(false);
   const [showRoleMenu, setShowRoleMenu] = useState(false);
@@ -108,52 +110,56 @@ export function Navbar() {
               className="flex items-center gap-2 rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100 transition-colors"
               title="Switch role view for demo"
             >
-              <span className="h-2 w-2 rounded-full bg-emerald-500"></span>
-              <span className="capitalize">{activeRole.replace("_", " ")}</span>
+              <span className={`h-2 w-2 rounded-full ${isAuthenticated ? "bg-emerald-500" : "bg-amber-500"}`}></span>
+              <span className="capitalize font-semibold">
+                {isAuthenticated && user ? user.fullName.split(" ")[0] : "Guest / Logged Out"}
+              </span>
               <ChevronDown className="h-3.5 w-3.5 text-zinc-400" />
             </button>
 
             {showRoleMenu && (
-              <div className="absolute right-0 mt-2 w-56 origin-top-right rounded-lg border border-zinc-200 bg-white p-1.5 shadow-lg ring-1 ring-black/5 z-50">
+              <div className="absolute right-0 mt-2 w-64 origin-top-right rounded-lg border border-zinc-200 bg-white p-1.5 shadow-lg ring-1 ring-black/5 z-50">
                 <div className="px-2 py-1 text-[10px] font-semibold uppercase text-zinc-400">
                   Switch Active Persona
                 </div>
-                <button
-                  onClick={() => {
-                    setActiveRole("candidate");
-                    setShowRoleMenu(false);
-                  }}
-                  className={`w-full text-left px-2.5 py-2 text-xs rounded-md flex flex-col ${
-                    activeRole === "candidate" ? "bg-sky-50 text-sky-900 font-medium" : "hover:bg-zinc-50 text-zinc-700"
-                  }`}
-                >
-                  <span>Candidate (Arjun Verma)</span>
-                  <span className="text-[10px] text-zinc-500 font-normal">Takes tests, proves skills, joins teams</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setActiveRole("team_leader");
-                    setShowRoleMenu(false);
-                  }}
-                  className={`w-full text-left px-2.5 py-2 text-xs rounded-md flex flex-col ${
-                    activeRole === "team_leader" ? "bg-sky-50 text-sky-900 font-medium" : "hover:bg-zinc-50 text-zinc-700"
-                  }`}
-                >
-                  <span>Team Leader (Rohan Kulkarni)</span>
-                  <span className="text-[10px] text-zinc-500 font-normal">Inspects coverage, tests candidates</span>
-                </button>
-                <button
-                  onClick={() => {
-                    setActiveRole("recruiter");
-                    setShowRoleMenu(false);
-                  }}
-                  className={`w-full text-left px-2.5 py-2 text-xs rounded-md flex flex-col ${
-                    activeRole === "recruiter" ? "bg-sky-50 text-sky-900 font-medium" : "hover:bg-zinc-50 text-zinc-700"
-                  }`}
-                >
-                  <span>Campus Recruiter (Sneha Patel)</span>
-                  <span className="text-[10px] text-zinc-500 font-normal">Manages drives, filters verified talent</span>
-                </button>
+                {DEMO_PERSONAS.map((p) => {
+                  const isActive = user?.id === p.id;
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => {
+                        loginWithPersona(p.id);
+                        setShowRoleMenu(false);
+                      }}
+                      className={`w-full text-left px-2.5 py-2 text-xs rounded-md flex flex-col transition-colors ${
+                        isActive
+                          ? "bg-sky-50 text-sky-950 font-semibold border border-sky-200/60"
+                          : "hover:bg-zinc-50 text-zinc-700"
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <span className="font-semibold">{p.name}</span>
+                        <span className="text-[10px] uppercase font-bold text-zinc-400">{p.role.replace("_", " ")}</span>
+                      </div>
+                      <span className="text-[10px] text-zinc-500 font-normal mt-0.5">{p.description}</span>
+                    </button>
+                  );
+                })}
+
+                {isAuthenticated && (
+                  <div className="mt-1 border-t border-zinc-100 pt-1">
+                    <button
+                      onClick={() => {
+                        logout();
+                        setShowRoleMenu(false);
+                      }}
+                      className="w-full text-left px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-md flex items-center gap-2 font-medium"
+                    >
+                      <LogOut className="h-3.5 w-3.5" />
+                      Sign Out (Test Logged Out)
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
@@ -232,13 +238,23 @@ export function Navbar() {
           </div>
 
           {/* Quick CTA */}
-          <Link
-            href="/assessments"
-            className="hidden sm:inline-flex items-center gap-1.5 rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 shadow-sm transition-colors"
-          >
-            <Sparkles className="h-3.5 w-3.5 text-sky-400" />
-            Verify Skills
-          </Link>
+          {!isAuthenticated ? (
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-1.5 rounded-md bg-zinc-950 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 shadow-sm transition-colors"
+            >
+              <LogIn className="h-3.5 w-3.5 text-sky-400" />
+              Sign In
+            </Link>
+          ) : (
+            <Link
+              href="/assessments"
+              className="hidden sm:inline-flex items-center gap-1.5 rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 shadow-sm transition-colors"
+            >
+              <Sparkles className="h-3.5 w-3.5 text-sky-400" />
+              Verify Skills
+            </Link>
+          )}
         </div>
       </div>
     </header>

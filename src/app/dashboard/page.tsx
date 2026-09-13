@@ -36,47 +36,76 @@ import {
   TeamVerificationTest,
 } from "@/types";
 
+import { useAuth, DEMO_PERSONAS } from "@/lib/auth/auth-context";
+
 export default function DashboardPage() {
+  const { user, role: userRole, loading: authLoading, isAuthenticated, loginWithPersona } = useAuth();
   const [profileData, setProfileData] = useState<any>(null);
   const [teamData, setTeamData] = useState<any>(null);
   const [drives, setDrives] = useState<RecruitmentDrive[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
   const [candidateMatches, setCandidateMatches] = useState<CandidateMatch[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // Active persona view: 'candidate' | 'team_leader' | 'recruiter'
   const [activePersona, setActivePersona] = useState<"candidate" | "team_leader" | "recruiter">("candidate");
 
   useEffect(() => {
-    async function loadDashboard() {
-      try {
-        const [profRes, appsRes, teamRes, drivesRes, matchRes] = await Promise.all([
-          fetch("/api/profile?id=usr-01"),
-          fetch("/api/recruitment/applications?candidateId=usr-01"),
-          fetch("/api/teams/tm-01"),
-          fetch("/api/recruitment/drives"),
-          fetch("/api/matching/candidates?teamId=tm-01"),
-        ]);
+    if (userRole) {
+      setActivePersona(userRole);
+    }
+  }, [userRole]);
 
-        const profJson = await profRes.json();
-        const appsJson = await appsRes.json();
-        const teamJson = await teamRes.json();
-        const drivesJson = await drivesRes.json();
-        const matchJson = await matchRes.json();
+  const loadDashboard = async () => {
+    if (!user) {
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const activeId = user.id || "usr-01";
+      const [profRes, appsRes, teamRes, drivesRes, matchRes] = await Promise.all([
+        fetch(`/api/profile?id=${activeId}`),
+        fetch(`/api/recruitment/applications?candidateId=${activeId}`),
+        fetch("/api/teams/tm-01"),
+        fetch("/api/recruitment/drives"),
+        fetch("/api/matching/candidates?teamId=tm-01"),
+      ]);
 
-        if (profJson.success) setProfileData(profJson.data);
-        if (appsJson.success) setApplications(appsJson.data);
-        if (teamJson.success) setTeamData(teamJson.data);
-        if (drivesJson.success) setDrives(drivesJson.data);
-        if (matchJson.success) setCandidateMatches(matchJson.data);
-      } catch (err) {
-        console.error(err);
-      } finally {
+      const profJson = await profRes.json();
+      const appsJson = await appsRes.json();
+      const teamJson = await teamRes.json();
+      const drivesJson = await drivesRes.json();
+      const matchJson = await matchRes.json();
+
+      if (!profJson.success && profRes.status !== 200) {
+        throw new Error(profJson.error?.message || "Failed to load candidate profile.");
+      }
+
+      if (profJson.success) setProfileData(profJson.data);
+      if (appsJson.success) setApplications(appsJson.data);
+      if (teamJson.success) setTeamData(teamJson.data);
+      if (drivesJson.success) setDrives(drivesJson.data);
+      if (matchJson.success) setCandidateMatches(matchJson.data);
+    } catch (err: any) {
+      console.error(err);
+      setError(err?.message || "Unable to connect to verification services. Please check your connection.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!authLoading) {
+      if (isAuthenticated) {
+        loadDashboard();
+      } else {
         setLoading(false);
       }
     }
-    loadDashboard();
-  }, []);
+  }, [authLoading, isAuthenticated, user?.id]);
 
   const handleDecision = async (testId: string, decision: "accepted" | "rejected") => {
     try {
@@ -109,7 +138,8 @@ export default function DashboardPage() {
     } catch {}
   };
 
-  if (loading) {
+  // 1. Loading State
+  if (authLoading || (loading && isAuthenticated)) {
     return (
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
         <div className="animate-pulse space-y-6">
@@ -118,6 +148,107 @@ export default function DashboardPage() {
             <div className="h-64 rounded-xl bg-zinc-200"></div>
             <div className="h-64 rounded-xl bg-zinc-200"></div>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Logged Out State (Clear prompt, never a silent blank page)
+  if (!isAuthenticated) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
+        <div className="rounded-2xl border border-zinc-200 bg-white p-8 sm:p-12 shadow-xs text-center max-w-3xl mx-auto space-y-6">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-zinc-950 text-white shadow-md shadow-zinc-900/10">
+            <ShieldCheck className="h-8 w-8 text-sky-400" />
+          </div>
+
+          <div>
+            <span className="rounded bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-800 uppercase tracking-wider">
+              Authentication Required
+            </span>
+            <h1 className="mt-3 text-2xl sm:text-3xl font-bold tracking-tight text-zinc-950">
+              Sign in to view your Verified Dashboard
+            </h1>
+            <p className="mt-2 text-xs sm:text-sm text-zinc-600 max-w-xl mx-auto leading-relaxed">
+              Access your evidence-backed skills, standardized blueprint assessment results, anti-cheat consistency signals, and hackathon team match queues.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <Link
+              href="/login"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-zinc-950 px-5 py-2.5 text-xs font-semibold text-white shadow-sm hover:bg-zinc-800 transition"
+            >
+              <span>Sign In to Account</span>
+              <ArrowRight className="h-3.5 w-3.5" />
+            </Link>
+            <Link
+              href="/register"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg border border-zinc-200 bg-white px-5 py-2.5 text-xs font-semibold text-zinc-700 hover:bg-zinc-50 transition"
+            >
+              Create Account
+            </Link>
+          </div>
+
+          {/* 1-Click Evaluation Demo Personas */}
+          <div className="mt-8 pt-8 border-t border-zinc-100 text-left">
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-[11px] font-bold uppercase tracking-wider text-zinc-400">
+                Or Instant 1-Click Demo Evaluation:
+              </span>
+              <span className="inline-flex items-center gap-1 rounded bg-sky-50 px-1.5 py-0.5 text-[10px] font-medium text-sky-700">
+                <Sparkles className="h-3 w-3" /> Quick Switch
+              </span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {DEMO_PERSONAS.slice(0, 3).map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => loginWithPersona(p.id)}
+                  className="rounded-xl border border-zinc-200 bg-zinc-50/60 p-3.5 text-left hover:border-sky-300 hover:bg-sky-50/50 transition shadow-2xs group"
+                >
+                  <div className="flex items-center gap-2">
+                    <img
+                      src={p.avatarUrl}
+                      alt={p.name}
+                      className="h-8 w-8 rounded-full object-cover border border-zinc-200"
+                    />
+                    <div>
+                      <p className="font-semibold text-xs text-zinc-950 group-hover:text-sky-900">{p.name}</p>
+                      <p className="text-[10px] text-zinc-500 capitalize">{p.role.replace("_", " ")}</p>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-zinc-600 mt-2 line-clamp-2">{p.description}</p>
+                  <span className="inline-block mt-2 text-[10px] font-semibold text-sky-600">
+                    Load {p.role.replace("_", " ")} View →
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. Error State (Never silent fail)
+  if (error) {
+    return (
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
+        <div className="rounded-xl border border-rose-200 bg-rose-50/60 p-6 text-center max-w-lg mx-auto space-y-4 shadow-xs">
+          <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-600">
+            <AlertCircle className="h-6 w-6" />
+          </div>
+          <div>
+            <h2 className="text-base font-bold text-rose-950">Unable to Load Dashboard</h2>
+            <p className="text-xs text-rose-700 mt-1">{error}</p>
+          </div>
+          <button
+            onClick={loadDashboard}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-rose-700 px-4 py-2 text-xs font-semibold text-white hover:bg-rose-800 transition"
+          >
+            Retry Connection
+          </button>
         </div>
       </div>
     );
@@ -221,31 +352,48 @@ export default function DashboardPage() {
 
           {/* Core Score Cards */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {evidenceStrength && <EvidenceScoreCard data={evidenceStrength} />}
+            <EvidenceScoreCard
+              data={
+                evidenceStrength || {
+                  compositeScore: 0,
+                  assessmentScore: 0,
+                  githubScore: 0,
+                  projectsScore: 0,
+                  certificatesScore: 0,
+                  explanation: ["No verified evidence recorded yet. Take an assessment or connect GitHub to build strength."],
+                }
+              }
+            />
 
             <ConsistencyScoreCard
-              breakdown={{
-                score: 95,
-                timingAnomalies: 0,
-                tabSwitches: 1,
-                clipboardAttempts: 0,
-                answerChanges: 2,
-                difficultyTimeCorrelation: "Normal",
-                disclaimer:
-                  "These are assessment-behavior signals and should be considered alongside the candidate's result. They do not establish cheating.",
-                signals: [
-                  {
-                    title: "Window Focus Maintained",
-                    description: "Continuous focus retained during technical assessment.",
-                    level: "positive",
-                  },
-                  {
-                    title: "Clean Clipboard Log",
-                    description: "No clipboard interactions detected during test.",
-                    level: "positive",
-                  },
-                ],
-              }}
+              breakdown={
+                (profileData as any)?.recentAttempt?.consistencyBreakdown || {
+                  score: 100,
+                  timingAnomalies: 0,
+                  tabSwitches: 0,
+                  clipboardAttempts: 0,
+                  answerChanges: 0,
+                  difficultyTimeCorrelation: "Normal",
+                  disclaimer:
+                    "These are assessment-behavior signals and should be considered alongside the candidate's result. They do not establish cheating.",
+                  signals: [
+                    {
+                      title: "Continuous Window Focus",
+                      description: "Candidate maintained uninterrupted focus in assessment browser tab (0 pts).",
+                      level: "positive",
+                      pointsDeducted: 0,
+                    },
+                    {
+                      title: "Clean Clipboard Log",
+                      description: "No copy, paste, or cut attempts detected during session (0 pts).",
+                      level: "positive",
+                      pointsDeducted: 0,
+                    },
+                  ],
+                }
+              }
+              attemptId={(profileData as any)?.recentAttempt?.id}
+              rawEvents={(profileData as any)?.recentAttempt?.rawEvents}
             />
           </div>
 
@@ -271,17 +419,28 @@ export default function DashboardPage() {
                 <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
                   Verified Skills ({verifiedSkills.length})
                 </span>
-                <div className="mt-2.5 flex flex-wrap gap-2.5">
-                  {verifiedSkills.map((s: CandidateSkill) => (
-                    <SkillBadge
-                      key={s.id}
-                      name={s.skillName || s.skillId}
-                      level={s.declaredLevel}
-                      verified={true}
-                      score={s.verificationScore}
+                {verifiedSkills.length === 0 ? (
+                  <div className="mt-2.5">
+                    <EmptyState
+                      title="No verified skills yet"
+                      description="Complete a 15-minute standardized blueprint assessment to benchmark your technical capabilities and earn verified badges."
+                      actionLabel="Take Skill Assessment"
+                      onAction={() => (window.location.href = "/assessments")}
                     />
-                  ))}
-                </div>
+                  </div>
+                ) : (
+                  <div className="mt-2.5 flex flex-wrap gap-2.5">
+                    {verifiedSkills.map((s: CandidateSkill) => (
+                      <SkillBadge
+                        key={s.id}
+                        name={s.skillName || s.skillId}
+                        level={s.declaredLevel}
+                        verified={true}
+                        score={s.verificationScore}
+                      />
+                    ))}
+                  </div>
+                )}
               </div>
 
               {unverifiedSkills.length > 0 && (

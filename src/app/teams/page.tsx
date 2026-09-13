@@ -47,6 +47,12 @@ export default function TeamsPage() {
   const [verifySkill, setVerifySkill] = useState("react");
   const [verifyDifficulty, setVerifyDifficulty] = useState("intermediate");
   const [verifyRequiredScore, setVerifyRequiredScore] = useState(75);
+  const [verifyError, setVerifyError] = useState<{
+    message: string;
+    retryAvailableAt?: string;
+    hoursRemaining?: number;
+  } | null>(null);
+  const [isSubmittingVerify, setIsSubmittingVerify] = useState(false);
 
   const loadTeams = async () => {
     try {
@@ -133,6 +139,8 @@ export default function TeamsPage() {
 
   const handleIssueVerificationTest = async () => {
     if (!selectedTeam || !verifyModalCandidate) return;
+    setVerifyError(null);
+    setIsSubmittingVerify(true);
     try {
       const res = await fetch("/api/team-verification", {
         method: "POST",
@@ -149,9 +157,20 @@ export default function TeamsPage() {
       if (json.success) {
         alert(`Verification challenge successfully issued to candidate!`);
         setVerifyModalCandidate(null);
+        setVerifyError(null);
         loadTeamDetails(selectedTeam.id);
+      } else {
+        setVerifyError({
+          message: json.error?.message || "Failed to issue verification test.",
+          retryAvailableAt: json.error?.details?.retryAvailableAt,
+          hoursRemaining: json.error?.details?.hoursRemaining,
+        });
       }
-    } catch {}
+    } catch {
+      setVerifyError({ message: "Network error occurred while issuing verification challenge." });
+    } finally {
+      setIsSubmittingVerify(false);
+    }
   };
 
   const handleDecision = async (testId: string, decision: "accepted" | "rejected") => {
@@ -522,7 +541,10 @@ export default function TeamsPage() {
                         key={match.candidateId}
                         match={match}
                         teamId={selectedTeam.id}
-                        onInviteToVerify={(candidateId) => setVerifyModalCandidate(candidateId)}
+                        onInviteToVerify={(candidateId) => {
+                          setVerifyModalCandidate(candidateId);
+                          setVerifyError(null);
+                        }}
                       />
                     ))
                   )}
@@ -544,7 +566,10 @@ export default function TeamsPage() {
             <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
               <h2 className="font-bold text-base text-zinc-950">Issue Team Verification Challenge</h2>
               <button
-                onClick={() => setVerifyModalCandidate(null)}
+                onClick={() => {
+                  setVerifyModalCandidate(null);
+                  setVerifyError(null);
+                }}
                 className="rounded p-1 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100"
               >
                 <X className="h-4 w-4" />
@@ -555,17 +580,50 @@ export default function TeamsPage() {
               The candidate will receive an invitation to take this technical assessment. You can evaluate their result and integrity signals before accepting.
             </p>
 
+            {/* Rate Limit Alert Banner */}
+            {verifyError && (
+              <div className="rounded-lg border border-rose-200 bg-rose-50/90 p-3 text-xs text-rose-950 space-y-1.5 animate-in fade-in">
+                <div className="flex items-center gap-1.5 font-bold text-rose-950">
+                  <AlertCircle className="h-4 w-4 text-rose-600 shrink-0" />
+                  <span>Rate Limit Cooldown Active (48h Limit)</span>
+                </div>
+                <p className="text-[11px] leading-relaxed text-rose-800">{verifyError.message}</p>
+                {verifyError.retryAvailableAt && (
+                  <div className="mt-1.5 pt-1.5 border-t border-rose-200/80 flex items-center justify-between text-[11px]">
+                    <span className="font-medium text-rose-700">Cooldown Remaining:</span>
+                    <span className="font-mono font-bold text-rose-950">
+                      ~{verifyError.hoursRemaining}h remaining
+                    </span>
+                  </div>
+                )}
+                {verifyError.retryAvailableAt && (
+                  <p className="text-[10px] text-rose-600 italic">
+                    Re-test available at: {new Date(verifyError.retryAvailableAt).toLocaleString()}
+                  </p>
+                )}
+              </div>
+            )}
+
             <div>
               <label className="block text-xs font-semibold text-zinc-800 mb-1">Select Skill</label>
               <select
                 value={verifySkill}
-                onChange={(e) => setVerifySkill(e.target.value)}
+                onChange={(e) => {
+                  setVerifySkill(e.target.value);
+                  setVerifyError(null);
+                }}
                 className="w-full rounded-md border border-zinc-300 p-2 text-xs text-zinc-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-500"
               >
                 <option value="react">React</option>
                 <option value="python">Python</option>
                 <option value="typescript">TypeScript</option>
                 <option value="sql">SQL</option>
+                <option value="solidity">Solidity</option>
+                <option value="pytorch">PyTorch</option>
+                <option value="go">Go</option>
+                <option value="docker">Docker</option>
+                <option value="linux">Linux</option>
+                <option value="rust">Rust</option>
               </select>
             </div>
 
@@ -603,16 +661,20 @@ export default function TeamsPage() {
             <div className="flex justify-end gap-2 pt-2 border-t border-zinc-100">
               <button
                 type="button"
-                onClick={() => setVerifyModalCandidate(null)}
+                onClick={() => {
+                  setVerifyModalCandidate(null);
+                  setVerifyError(null);
+                }}
                 className="rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-600 hover:bg-zinc-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleIssueVerificationTest}
-                className="rounded-md bg-zinc-950 px-4 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 shadow-2xs"
+                disabled={isSubmittingVerify}
+                className="rounded-md bg-zinc-950 px-4 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 shadow-2xs disabled:opacity-50"
               >
-                Send Challenge
+                {isSubmittingVerify ? "Sending..." : "Send Challenge"}
               </button>
             </div>
           </div>

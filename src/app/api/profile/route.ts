@@ -22,6 +22,16 @@ export async function GET(req: NextRequest) {
   const github = db.getGitHubEvidence(candidateId);
   const evidenceStrength = db.calculateEvidenceStrengthScore(candidateId);
 
+  const candidateAttempts = db.attempts.filter(
+    (a) => a.candidateId === candidateId && a.status === "submitted"
+  );
+  const recentAttempt =
+    candidateAttempts.sort(
+      (a, b) =>
+        new Date(b.submittedAt || b.startedAt).getTime() -
+        new Date(a.submittedAt || a.startedAt).getTime()
+    )[0] || null;
+
   const response: ApiSuccess<any> = {
     success: true,
     data: {
@@ -31,6 +41,7 @@ export async function GET(req: NextRequest) {
       certificates,
       github,
       evidenceStrength,
+      recentAttempt,
     },
   };
 

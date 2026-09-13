@@ -46,4 +46,11 @@ export const INITIAL_SKILLS = [
   { id: "sql", name: "SQL", category: "database" as const, description: "Joins, grouping, window functions, indexing, normalization, and query optimization" },
   { id: "nextjs", name: "Next.js", category: "frontend" as const, description: "App Router, Server Components, Route Handlers, caching, and Server Actions" },
   { id: "nodejs", name: "Node.js", category: "backend" as const, description: "Event loop, streams, buffers, Express, and microservices architecture" },
+  { id: "solidity", name: "Solidity", category: "languages" as const, description: "Smart contracts, EVM execution, ERC standards, reentrancy guards, and gas optimization" },
+  { id: "pytorch", name: "PyTorch", category: "backend" as const, description: "Tensor operations, autograd, model training loops, neural architectures, and inference" },
+  { id: "go", name: "Go", category: "languages" as const, description: "Concurrency primitives, channels, goroutines, memory management, and high-throughput networking" },
+  { id: "docker", name: "Docker", category: "devops" as const, description: "Container lifecycle, multi-stage builds, rootless execution, and orchestration" },
+  { id: "linux", name: "Linux", category: "devops" as const, description: "POSIX system calls, process scheduling, eBPF telemetry, shell automation, and networking" },
+  { id: "rust", name: "Rust", category: "languages" as const, description: "Borrow checker, lifetimes, fearless concurrency, zero-cost abstractions, and systems programming" },
 ];
+

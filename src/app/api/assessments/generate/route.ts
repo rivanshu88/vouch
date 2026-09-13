@@ -55,10 +55,11 @@ export async function POST(req: NextRequest) {
       data: attempt,
     };
     return NextResponse.json(response, { status: 201 });
-  } catch {
+  } catch (err: any) {
+    console.error("GENERATE ERROR:", err);
     const errorRes: ApiError = {
       success: false,
-      error: { code: "GENERATION_FAILED", message: "Failed to generate assessment attempt." },
+      error: { code: "GENERATION_FAILED", message: err?.message || "Failed to generate assessment attempt." },
     };
     return NextResponse.json(errorRes, { status: 500 });
   }

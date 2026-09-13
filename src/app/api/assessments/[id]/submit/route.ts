@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db/store";
 import { evaluateAssessment } from "@/lib/assessments/scoring";
 import { calculateConsistencyScore } from "@/lib/integrity/consistency";
-import { ApiError, ApiSuccess, AssessmentAnswer } from "@/types";
+import { ApiError, ApiSuccess, AssessmentAnswer, AssessmentEvent, RawIntegrityEvent } from "@/types";
 
 export async function POST(
   req: NextRequest,
@@ -12,6 +12,7 @@ export async function POST(
     const { id: attemptId } = await params;
     const body = await req.json();
     const answers: AssessmentAnswer[] = body.answers || [];
+    const clientEvents: RawIntegrityEvent[] = body.events || [];
 
     const attempt = db.attempts.find((a) => a.id === attemptId);
     if (!attempt) {
@@ -30,22 +31,49 @@ export async function POST(
       return NextResponse.json(errorRes, { status: 400 });
     }
 
-    // 1. Server-side scoring (Client never determines the score)
+    // 1. Server-side scoring of question answers (Client never determines the test score)
     const scoreResult = evaluateAssessment(answers, attempt.passingScore);
 
-    // 2. Behavioral integrity & consistency score calculation
-    const events = db.attemptEvents[attemptId] || [];
-    const consistency = calculateConsistencyScore(events, answers);
+    // 2. Merge server-incremental events with client-sent full event log without duplicates
+    const incrementalEvents = (db.attemptEvents[attemptId] || []) as unknown as (
+      | RawIntegrityEvent
+      | AssessmentEvent
+    )[];
+    const eventMap = new Map<string, RawIntegrityEvent | AssessmentEvent>();
 
-    // 3. Update attempt state
+    for (const ev of incrementalEvents) {
+      const key = `${ev.type}_${ev.timestamp}_${(ev as any).questionId || ""}`;
+      eventMap.set(key, ev);
+    }
+    for (const ev of clientEvents) {
+      const key = `${ev.type}_${ev.timestamp}_${ev.questionId || ""}`;
+      eventMap.set(key, ev);
+    }
+
+    const allEvents = Array.from(eventMap.values()).sort((a, b) => {
+      const tA = typeof a.timestamp === "number" ? a.timestamp : new Date(a.timestamp).getTime();
+      const tB = typeof b.timestamp === "number" ? b.timestamp : new Date(b.timestamp).getTime();
+      return tA - tB;
+    });
+
+    // 3. Behavioral integrity & consistency score calculation with server wall-clock timing check
+    const serverSubmittedAt = new Date().toISOString();
+    const consistency = calculateConsistencyScore(allEvents, answers, {
+      serverStartedAt: attempt.startedAt,
+      serverSubmittedAt,
+    });
+
+    // 4. Update attempt state and persist raw events & computed scores
     attempt.status = "submitted";
-    attempt.submittedAt = new Date().toISOString();
+    attempt.submittedAt = serverSubmittedAt;
     attempt.score = scoreResult.score;
     attempt.passed = scoreResult.passed;
     attempt.integrityScore = consistency.score;
     attempt.consistencyBreakdown = consistency;
+    attempt.rawEvents = allEvents;
+    db.attemptEvents[attemptId] = allEvents as any[];
 
-    // 4. Update candidate skill verification status if passed
+    // 5. Update candidate skill verification status if passed
     if (scoreResult.passed) {
       const candidateSkill = db.candidateSkills.find(
         (cs) => cs.candidateId === attempt.candidateId && cs.skillId === attempt.skillId
@@ -81,9 +109,12 @@ export async function POST(
       });
     }
 
-    // 5. Update team verification test if this was linked to one
+    // 6. Update team verification test if this was linked to one
     const verificationTest = db.verificationTests.find(
-      (vt) => vt.candidateId === attempt.candidateId && vt.skillId === attempt.skillId && vt.status === "invited"
+      (vt) =>
+        vt.candidateId === attempt.candidateId &&
+        vt.skillId === attempt.skillId &&
+        vt.status === "invited"
     );
     if (verificationTest) {
       verificationTest.status = "completed";

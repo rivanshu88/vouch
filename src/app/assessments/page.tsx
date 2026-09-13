@@ -165,7 +165,13 @@ export default function AssessmentsPage() {
         </div>
 
         {/* Consistency & Integrity Breakdown Card */}
-        {consistency && <ConsistencyScoreCard breakdown={consistency} />}
+        {consistency && (
+          <ConsistencyScoreCard
+            breakdown={consistency}
+            attemptId={attempt?.id}
+            rawEvents={attempt?.rawEvents}
+          />
+        )}
 
         {/* Detailed Question Review */}
         <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-xs space-y-4">

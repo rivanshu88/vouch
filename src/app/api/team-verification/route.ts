@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db/store";
 import { CreateVerificationRequestSchema } from "@/lib/validation/schemas";
 import { ApiError, ApiSuccess, TeamVerificationTest } from "@/types";
+import { checkVerificationRateLimit } from "@/lib/assessments/rate-limit";
 
 export async function POST(req: NextRequest) {
   try {
@@ -30,6 +31,23 @@ export async function POST(req: NextRequest) {
 
     const candidate = db.getProfile(candidateId);
     const skillMeta = db.skills.find((s) => s.id === skillId);
+
+    // Rate-limiting: Max 1 verification test per (team, candidate, skill) per 48 hours
+    const rateLimit = checkVerificationRateLimit(db.verificationTests, teamId, candidateId, skillId);
+    if (!rateLimit.isAllowed) {
+      const errorRes: ApiError = {
+        success: false,
+        error: {
+          code: "RATE_LIMIT_EXCEEDED",
+          message: `A verification test for ${skillMeta?.name || skillId} was already issued to this candidate within the last 48 hours.`,
+          details: {
+            retryAvailableAt: rateLimit.retryAvailableAt,
+            hoursRemaining: rateLimit.hoursRemaining,
+          },
+        },
+      };
+      return NextResponse.json(errorRes, { status: 429 });
+    }
 
     const testId = `tvt-${Date.now()}`;
     const newTest: TeamVerificationTest = {

@@ -1,36 +1,85 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Vouch — Verified Skill Identity, Hackathon Team Formation & Campus Recruitment
+
+Vouch replaces inflated resume claims with standardized assessment integrity, normalized code evidence, and explainable compatibility matching for hackathon teams and campus recruitment.
+
+---
 
 ## Getting Started
 
-First, run the development server:
-
+### 1. Run Development Server
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+```
+Open [http://localhost:3000](http://localhost:3000) to access the application.
+
+### 2. Run Tests & Linter
+```bash
+# Run unit & integration tests
+npm run test
+
+# Run ESLint check
+npm run lint
+
+# Validate full production build
+npm run build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Demo Personas & Dataset
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+The application is pre-populated with realistic demo data accessible directly from the login page or in-app persona switcher:
 
-## Learn More
+1. **Arjun Verma** (`candidate`):
+   - IIT Bombay, Computer Science & Engineering.
+   - Verified Skills: React (88%), TypeScript (82%).
+   - Unverified Claims: Rust, Docker.
+   - Evidence: GitHub projects (HyperQueue, FiberProfiler), AWS Developer certificate.
+2. **Rohan Kulkarni** (`team_leader`):
+   - BITS Pilani. Leading Team **NeuralMesh** for ETHGlobal.
+   - Verified Skills: Python (90%), SQL (82%).
+3. **Sneha Patel** (`recruiter`):
+   - Stanford University. Technical Talent Partner at Stripe.
+   - Managing frontend systems campus recruitment drive.
+4. **Priya Sundaram** (`candidate`):
+   - PES University Bengaluru, Data Science.
+   - Verified Skills: Python (84%), SQL (78%).
+   - Leader of Team **OmniChain Labs** for PennApps.
 
-To learn more about Next.js, take a look at the following resources:
+### Hackathon Teams with Intentional Gaps
+- **Team 1: NeuralMesh** (ETHGlobal New York) — Missing **Solidity / Smart Contracts** architect.
+- **Team 2: SentinelGuard** (HackMIT 2024) — Missing **PyTorch / ML** engineer.
+- **Team 3: OmniChain Labs** (PennApps XXV) — Missing **Frontend Lead (React/Next.js)**.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Campus Recruitment Drives & Tiered Benchmarks
+- **Stripe** (Frontend Systems Engineer): React ≥ 75%, TypeScript ≥ 70%, SQL ≥ 65%.
+- **Datadog** (Distributed Systems Engineer): Go ≥ 80%, Docker ≥ 75%, Linux ≥ 70%.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+---
 
-## Deploy on Vercel
+## Database Seeding & Production Guard
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The repository provides two methods for seeding the database:
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Option A: Direct SQL Import (`scripts/seed.sql`)
+Import [`scripts/seed.sql`](scripts/seed.sql) into your local PostgreSQL or Supabase SQL Editor.
+
+### Option B: TypeScript Seeder (`scripts/seed.ts` / `npm run seed`)
+```bash
+npm run seed
+```
+
+#### Production Safety Guard
+If `NEXT_PUBLIC_SUPABASE_URL` in `.env.local` points to a remote host (non-localhost), the seeder will abort automatically to prevent unintended database mutations:
+```
+⚠️ SAFETY WARNING: Remote Supabase database detected!
+Target URL: https://cicfbtxrppnckbiuaxuu.supabase.co
+```
+To explicitly confirm execution against your remote Supabase instance:
+```bash
+# PowerShell
+$env:CONFIRM_LIVE_SEED="true"; npm run seed
+
+# Bash / macOS / Linux
+CONFIRM_LIVE_SEED=true npm run seed
+```

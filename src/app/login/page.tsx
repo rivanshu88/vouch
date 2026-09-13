@@ -15,9 +15,11 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase/client";
+import { useAuth, DEMO_PERSONAS } from "@/lib/auth/auth-context";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { loginWithPersona } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -30,7 +32,7 @@ export default function LoginPage() {
 
     try {
       if (isSupabaseConfigured() && !password.includes("•")) {
-        const { error: authError } = await supabase.auth.signInWithPassword({
+        const { data, error: authError } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
@@ -39,24 +41,37 @@ export default function LoginPage() {
           setLoading(false);
           return;
         }
+        if (data.user) {
+          await loginWithPersona(data.user.id);
+        }
+      } else {
+        // Find matching persona or default to Arjun
+        const matchedPersona = DEMO_PERSONAS.find((p) => p.email === email) || DEMO_PERSONAS[0];
+        await loginWithPersona(matchedPersona.id);
       }
       router.push("/dashboard");
     } catch {
+      await loginWithPersona("usr-01");
       router.push("/dashboard");
     } finally {
       setLoading(false);
     }
   };
 
-  const handleQuickPersona = (personaEmail: string, role: string) => {
+  const handleQuickPersona = async (personaEmail: string, role: string) => {
     setEmail(personaEmail);
     setPassword("••••••••••••");
     setError(null);
     setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      const persona = DEMO_PERSONAS.find((p) => p.email === personaEmail) || DEMO_PERSONAS[0];
+      await loginWithPersona(persona.id);
       router.push("/dashboard");
-    }, 450);
+    } catch {
+      router.push("/dashboard");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
