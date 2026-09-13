@@ -4,15 +4,14 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  ShieldCheck,
   ArrowRight,
-  Sparkles,
   Lock,
   Mail,
   UserCheck,
   Users,
   Briefcase,
   AlertCircle,
+  FileCheck2,
 } from "lucide-react";
 import { supabase, isSupabaseConfigured } from "@/lib/supabase/client";
 import { useAuth, DEMO_PERSONAS } from "@/lib/auth/auth-context";
@@ -45,7 +44,6 @@ export default function LoginPage() {
           await loginWithPersona(data.user.id);
         }
       } else {
-        // Find matching persona or default to Arjun
         const matchedPersona = DEMO_PERSONAS.find((p) => p.email === email) || DEMO_PERSONAS[0];
         await loginWithPersona(matchedPersona.id);
       }
@@ -58,7 +56,7 @@ export default function LoginPage() {
     }
   };
 
-  const handleQuickPersona = async (personaEmail: string, role: string) => {
+  const handleQuickPersona = async (personaEmail: string) => {
     setEmail(personaEmail);
     setPassword("••••••••••••");
     setError(null);
@@ -75,26 +73,26 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-zinc-50/50">
+    <div className="min-h-[calc(100vh-4rem)] flex flex-col justify-center py-12 sm:px-6 lg:px-8 bg-[#FBFAF7]">
       <div className="sm:mx-auto sm:w-full sm:max-w-md">
         <div className="flex justify-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-zinc-950 text-white shadow-md shadow-zinc-900/10">
-            <ShieldCheck className="h-7 w-7 text-sky-400" />
+          <div className="flex h-12 w-12 items-center justify-center border border-[#1B3A5C] bg-[#1B3A5C] text-white">
+            <FileCheck2 className="h-6 w-6 text-white" />
           </div>
         </div>
-        <h2 className="mt-4 text-center text-2xl font-bold tracking-tight text-zinc-950">
-          Sign in to your Verified Identity
+        <h2 className="mt-4 text-center font-display text-2xl font-semibold tracking-tight text-[#1A1915]">
+          Sign in to your Verification Ledger
         </h2>
-        <p className="mt-1.5 text-center text-xs text-zinc-600">
+        <p className="mt-1.5 text-center text-xs text-[#8A8571]">
           Access your evidence-backed skills, team invites, and recruitment drives.
         </p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md px-4 sm:px-0">
-        <div className="rounded-xl border border-zinc-200 bg-white p-6 sm:p-8 shadow-xs">
+        <div className="border border-[#D9D5C7] bg-white p-6 sm:p-8">
           {error && (
-            <div className="mb-5 flex items-center gap-2 rounded-lg border border-rose-200 bg-rose-50/80 p-3 text-xs text-rose-800">
-              <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
+            <div className="mb-5 flex items-center gap-2 border border-[#8C2F2F]/30 bg-[#FDF2F2] p-3 text-xs text-[#8C2F2F]">
+              <AlertCircle className="h-4 w-4 shrink-0 text-[#8C2F2F]" />
               <span>{error}</span>
             </div>
           )}
@@ -103,13 +101,13 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="email"
-                className="block text-xs font-semibold text-zinc-800"
+                className="block font-mono text-xs font-semibold text-[#1A1915]"
               >
                 Email address
               </label>
               <div className="relative mt-1.5">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <Mail className="h-4 w-4 text-zinc-400" />
+                  <Mail className="h-4 w-4 text-[#8A8571]" />
                 </div>
                 <input
                   id="email"
@@ -120,7 +118,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@institution.edu"
-                  className="block w-full rounded-lg border border-zinc-200 bg-zinc-50/50 py-2.5 pl-9 pr-3 text-xs text-zinc-900 placeholder:text-zinc-400 transition-colors focus:border-sky-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-100"
+                  className="block w-full border border-[#D9D5C7] bg-[#FBFAF7] py-2 pl-9 pr-3 font-mono text-xs text-[#1A1915] placeholder:text-[#8A8571] focus:border-[#1B3A5C] focus:bg-white focus:outline-none"
                 />
               </div>
             </div>
@@ -129,7 +127,7 @@ export default function LoginPage() {
               <div className="flex items-center justify-between">
                 <label
                   htmlFor="password"
-                  className="block text-xs font-semibold text-zinc-800"
+                  className="block font-mono text-xs font-semibold text-[#1A1915]"
                 >
                   Password
                 </label>
@@ -139,14 +137,14 @@ export default function LoginPage() {
                     e.preventDefault();
                     alert("Demo mode: Any password or quick-persona login works.");
                   }}
-                  className="text-[11px] font-medium text-sky-600 hover:text-sky-800"
+                  className="font-mono text-[11px] text-[#1B3A5C] hover:underline"
                 >
                   Forgot password?
                 </a>
               </div>
               <div className="relative mt-1.5">
                 <div className="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3">
-                  <Lock className="h-4 w-4 text-zinc-400" />
+                  <Lock className="h-4 w-4 text-[#8A8571]" />
                 </div>
                 <input
                   id="password"
@@ -157,7 +155,7 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••••••"
-                  className="block w-full rounded-lg border border-zinc-200 bg-zinc-50/50 py-2.5 pl-9 pr-3 text-xs text-zinc-900 placeholder:text-zinc-400 transition-colors focus:border-sky-500 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-100"
+                  className="block w-full border border-[#D9D5C7] bg-[#FBFAF7] py-2 pl-9 pr-3 font-mono text-xs text-[#1A1915] placeholder:text-[#8A8571] focus:border-[#1B3A5C] focus:bg-white focus:outline-none"
                 />
               </div>
             </div>
@@ -167,22 +165,22 @@ export default function LoginPage() {
                 <input
                   type="checkbox"
                   defaultChecked
-                  className="h-3.5 w-3.5 rounded border-zinc-300 text-sky-600 focus:ring-sky-500"
+                  className="h-3.5 w-3.5 rounded-none border-[#D9D5C7] accent-[#1B3A5C]"
                 />
-                <span className="text-xs text-zinc-600">Remember this device</span>
+                <span className="text-xs text-[#3D3A31]">Remember this session</span>
               </label>
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-zinc-950 py-2.5 text-xs font-semibold text-white shadow-sm transition hover:bg-zinc-800 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 disabled:opacity-60"
+              className="mt-2 flex w-full items-center justify-center gap-2 bg-[#1B3A5C] py-2.5 font-mono text-xs font-medium text-white hover:bg-[#152e4a] transition-colors disabled:opacity-60"
             >
               {loading ? (
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
               ) : (
                 <>
-                  <span>Sign In</span>
+                  <span>Sign in</span>
                   <ArrowRight className="h-3.5 w-3.5" />
                 </>
               )}
@@ -190,83 +188,83 @@ export default function LoginPage() {
           </form>
 
           {/* Persona Demo Quick Sign-in */}
-          <div className="mt-6 border-t border-zinc-100 pt-5">
+          <div className="mt-6 border-t border-[#D9D5C7] pt-5">
             <div className="flex items-center justify-between mb-2.5">
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+              <span className="font-mono text-[11px] font-medium uppercase text-[#8A8571]">
                 1-Click Demo Evaluation
               </span>
-              <span className="inline-flex items-center gap-1 rounded bg-sky-50 px-1.5 py-0.5 text-[10px] font-medium text-sky-700">
-                <Sparkles className="h-2.5 w-2.5" /> Quick Fill
+              <span className="inline-flex items-center gap-1 border border-[#1B3A5C]/30 bg-[#E9EFF5] px-1.5 py-0.5 font-mono text-[10px] font-medium text-[#1B3A5C]">
+                Quick fill
               </span>
             </div>
             <div className="grid grid-cols-1 gap-2">
               <button
                 type="button"
                 onClick={() =>
-                  handleQuickPersona("arjun.verma@demo.vouch.io", "Candidate")
+                  handleQuickPersona("arjun.verma@demo.vouch.io")
                 }
-                className="flex items-center justify-between rounded-lg border border-zinc-200 bg-zinc-50/60 px-3 py-2 text-left text-xs transition hover:border-sky-300 hover:bg-sky-50/50"
+                className="flex items-center justify-between border border-[#D9D5C7] bg-[#FBFAF7] px-3 py-2 text-left text-xs transition hover:border-[#1B3A5C]"
               >
                 <div className="flex items-center gap-2">
-                  <UserCheck className="h-4 w-4 text-sky-600" />
+                  <UserCheck className="h-4 w-4 text-[#1B3A5C]" />
                   <div>
-                    <p className="font-semibold text-zinc-900">Arjun Verma</p>
-                    <p className="text-[10px] text-zinc-500">
+                    <p className="font-display font-medium text-[#1A1915]">Arjun Verma</p>
+                    <p className="font-mono text-[10px] text-[#8A8571]">
                       Candidate • Tier-1 Verified (React, TS)
                     </p>
                   </div>
                 </div>
-                <span className="text-[10px] font-medium text-sky-600">Select →</span>
+                <span className="font-mono text-[10px] text-[#1B3A5C]">Select →</span>
               </button>
 
               <button
                 type="button"
                 onClick={() =>
-                  handleQuickPersona("rohan.k@demo.vouch.io", "Team Leader")
+                  handleQuickPersona("rohan.k@demo.vouch.io")
                 }
-                className="flex items-center justify-between rounded-lg border border-zinc-200 bg-zinc-50/60 px-3 py-2 text-left text-xs transition hover:border-sky-300 hover:bg-sky-50/50"
+                className="flex items-center justify-between border border-[#D9D5C7] bg-[#FBFAF7] px-3 py-2 text-left text-xs transition hover:border-[#1B3A5C]"
               >
                 <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-indigo-600" />
+                  <Users className="h-4 w-4 text-[#1B3A5C]" />
                   <div>
-                    <p className="font-semibold text-zinc-900">Rohan Kulkarni</p>
-                    <p className="text-[10px] text-zinc-500">
+                    <p className="font-display font-medium text-[#1A1915]">Rohan Kulkarni</p>
+                    <p className="font-mono text-[10px] text-[#8A8571]">
                       Team Leader • NeuroHacks Finalist
                     </p>
                   </div>
                 </div>
-                <span className="text-[10px] font-medium text-indigo-600">Select →</span>
+                <span className="font-mono text-[10px] text-[#1B3A5C]">Select →</span>
               </button>
 
               <button
                 type="button"
                 onClick={() =>
-                  handleQuickPersona("sneha.patel@acme-corp.com", "Recruiter")
+                  handleQuickPersona("sneha.patel@acme-corp.com")
                 }
-                className="flex items-center justify-between rounded-lg border border-zinc-200 bg-zinc-50/60 px-3 py-2 text-left text-xs transition hover:border-sky-300 hover:bg-sky-50/50"
+                className="flex items-center justify-between border border-[#D9D5C7] bg-[#FBFAF7] px-3 py-2 text-left text-xs transition hover:border-[#1B3A5C]"
               >
                 <div className="flex items-center gap-2">
-                  <Briefcase className="h-4 w-4 text-emerald-600" />
+                  <Briefcase className="h-4 w-4 text-[#1B3A5C]" />
                   <div>
-                    <p className="font-semibold text-zinc-900">Sneha Patel</p>
-                    <p className="text-[10px] text-zinc-500">
+                    <p className="font-display font-medium text-[#1A1915]">Sneha Patel</p>
+                    <p className="font-mono text-[10px] text-[#8A8571]">
                       Campus Recruiter • Acme Cloud Drives
                     </p>
                   </div>
                 </div>
-                <span className="text-[10px] font-medium text-emerald-600">Select →</span>
+                <span className="font-mono text-[10px] text-[#1B3A5C]">Select →</span>
               </button>
             </div>
           </div>
 
           {/* Register Link */}
-          <div className="mt-6 text-center text-xs text-zinc-600">
-            Don&apos;t have an identity yet?{" "}
+          <div className="mt-6 text-center text-xs text-[#8A8571]">
+            Don&apos;t have an identity registered?{" "}
             <Link
               href="/register"
-              className="font-semibold text-sky-600 hover:text-sky-800 hover:underline"
+              className="font-mono font-medium text-[#1B3A5C] hover:underline"
             >
-              Create verified account
+              create verified account
             </Link>
           </div>
         </div>
@@ -274,3 +272,4 @@ export default function LoginPage() {
     </div>
   );
 }
+

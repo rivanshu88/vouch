@@ -26,6 +26,7 @@ export interface UseIntegrityTrackingReturn {
     fromOptionId?: string,
     toOptionId?: string
   ) => void;
+  recordPresenceSignal: (status: string, meta?: Record<string, unknown>) => void;
   getRawEvents: () => RawIntegrityEvent[];
   flushEventsSync: () => Promise<void>;
 }
@@ -243,7 +244,20 @@ export function useIntegrityTracking({
     [appendEvent]
   );
 
-  // 6. Access complete raw events log
+  // 6. Presence signal tracker (§4.8)
+  const recordPresenceSignal = useCallback(
+    (status: string, meta?: Record<string, unknown>) => {
+      appendEvent({
+        type: "presence_signal",
+        timestamp: Date.now(),
+        questionId: currentQuestionIdRef.current,
+        meta: { status, ...meta },
+      });
+    },
+    [appendEvent]
+  );
+
+  // 7. Access complete raw events log
   const getRawEvents = useCallback(() => {
     return [...eventsRef.current];
   }, []);
@@ -264,6 +278,7 @@ export function useIntegrityTracking({
     requestFullscreen,
     recordQuestionNavigation,
     recordAnswerRevision,
+    recordPresenceSignal,
     getRawEvents,
     flushEventsSync,
   };

@@ -204,7 +204,8 @@ export type RawIntegrityEventType =
   | "clipboard"
   | "fullscreen_exit"
   | "question_navigation"
-  | "answer_revision";
+  | "answer_revision"
+  | "presence_signal";
 
 export interface RawIntegrityEvent {
   type: RawIntegrityEventType;

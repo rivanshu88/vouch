@@ -1,4 +1,4 @@
-import { AssessmentAnswer, Question } from "@/types";
+import { AssessmentAnswer } from "@/types";
 import { QUESTION_BANK } from "./questions";
 
 export interface ScoreCalculationResult {

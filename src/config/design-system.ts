@@ -1,40 +1,30 @@
 export const DESIGN_TOKENS = {
   colors: {
-    background: "#FAFAFA",
-    surface: "#FFFFFF",
-    surfaceMuted: "#F4F4F5",
-    border: "#E4E4E7",
-    borderSubtle: "#F1F1F4",
-    textPrimary: "#09090B",
-    textSecondary: "#52525B",
-    textMuted: "#71717A",
-    accent: "#0284C7", // Slate cyan/sky for senior engineering trust
-    accentHover: "#0369A1",
-    accentSubtle: "#E0F2FE",
-    verifiedGreen: "#059669",
-    verifiedGreenBg: "#ECFDF5",
-    verifiedGreenBorder: "#A7F3D0",
-    unverifiedAmber: "#D97706",
-    unverifiedAmberBg: "#FFFBEB",
-    unverifiedAmberBorder: "#FDE68A",
-    dangerRed: "#DC2626",
-    dangerRedBg: "#FEF2F2",
+    canvasBg: "#FBFAF7",
+    canvasGrid: "#EFEDE6",
+    surfaceCard: "#FFFFFF",
+    surfaceRecessed: "#F3F1EA",
+    inkHairline: "#D9D5C7",
+    inkHairlineStrong: "#B8B29D",
+    inkPrimary: "#1B3A5C",
+    inkPrimaryTint: "#E9EFF5",
+    sealVerified: "#2F6844",
+    sealVerifiedTint: "#EBF2EC",
+    sealPending: "#9A6B1F",
+    sealFlagged: "#8C2F2F",
+    signalCameraLive: "#1B3A5C",
+    inkText: "#3D3A31",
+    inkMuted: "#8A8571",
   },
   typography: {
-    fontFamilySans: "var(--font-geist-sans), -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif",
-    fontFamilyMono: "var(--font-geist-mono), monospace",
+    fontDisplay: "var(--font-space-grotesk), sans-serif",
+    fontBody: "var(--font-plex-sans), sans-serif",
+    fontMono: "var(--font-plex-mono), monospace",
   },
-  borderRadius: {
-    sm: "0.25rem",
-    md: "0.375rem",
-    lg: "0.5rem",
-    xl: "0.75rem",
-    full: "9999px",
-  },
-  shadows: {
-    subtle: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
-    card: "0 1px 3px 0 rgba(0, 0, 0, 0.08), 0 1px 2px -1px rgba(0, 0, 0, 0.08)",
-    elevated: "0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -2px rgba(0, 0, 0, 0.08)",
+  borders: {
+    hairline: "1px solid #D9D5C7",
+    hairlineStrong: "1px solid #B8B29D",
+    dashedHairline: "1px dashed #D9D5C7",
   },
 };
 
@@ -53,4 +43,3 @@ export const INITIAL_SKILLS = [
   { id: "linux", name: "Linux", category: "devops" as const, description: "POSIX system calls, process scheduling, eBPF telemetry, shell automation, and networking" },
   { id: "rust", name: "Rust", category: "languages" as const, description: "Borrow checker, lifetimes, fearless concurrency, zero-cost abstractions, and systems programming" },
 ];
-

@@ -3,7 +3,7 @@ import React from "react";
 export function Skeleton({ className = "" }: { className?: string }) {
   return (
     <div
-      className={`animate-pulse rounded-md bg-zinc-200/70 ${className}`}
+      className={`animate-pulse bg-[#F3F1EA] ${className}`}
       aria-hidden="true"
     />
   );
@@ -11,9 +11,9 @@ export function Skeleton({ className = "" }: { className?: string }) {
 
 export function SkeletonCard() {
   return (
-    <div className="rounded-xl border border-zinc-200 bg-white p-5 space-y-4">
+    <div className="border border-[#D9D5C7] bg-white p-5 space-y-4">
       <div className="flex items-center gap-3">
-        <Skeleton className="h-10 w-10 rounded-full" />
+        <Skeleton className="h-10 w-10 border border-[#D9D5C7]" />
         <div className="space-y-1.5 flex-1">
           <Skeleton className="h-4 w-1/3" />
           <Skeleton className="h-3 w-1/2" />
@@ -28,3 +28,4 @@ export function SkeletonCard() {
     </div>
   );
 }
+

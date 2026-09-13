@@ -4,16 +4,15 @@ import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  ShieldCheck,
-  CheckCircle2,
-  Users,
-  Briefcase,
   Layers,
   Bell,
-  Sparkles,
   ChevronDown,
   UserCheck,
   ExternalLink,
+  ClipboardList,
+  Users2,
+  Briefcase,
+  FileCheck2,
 } from "lucide-react";
 import { InAppNotification } from "@/types";
 import { useAuth, DEMO_PERSONAS } from "@/lib/auth/auth-context";
@@ -49,31 +48,31 @@ export function Navbar() {
   };
 
   const navLinks = [
-    { href: "/dashboard", label: "Dashboard", icon: Layers },
+    { href: "/dashboard", label: "Ledger Dashboard", icon: Layers },
     { href: "/profile", label: "Profile & Evidence", icon: UserCheck },
-    { href: "/assessments", label: "Assessments", icon: CheckCircle2 },
-    { href: "/teams", label: "Hackathon Teams", icon: Users },
-    { href: "/recruitment", label: "Campus Recruitment", icon: Briefcase },
+    { href: "/assessments", label: "Assessments", icon: ClipboardList },
+    { href: "/teams", label: "Hackathon Teams", icon: Users2 },
+    { href: "/recruitment", label: "Recruitment Drives", icon: Briefcase },
   ];
 
   return (
-    <header className="sticky top-0 z-40 w-full border-b border-zinc-200 bg-white/95 backdrop-blur-md">
+    <header className="sticky top-0 z-40 w-full border-b border-[#D9D5C7] bg-white">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Brand */}
         <div className="flex items-center gap-8">
           <Link href="/dashboard" className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-zinc-900 text-white shadow-sm">
-              <ShieldCheck className="h-5 w-5 text-sky-400" />
+            <div className="flex h-9 w-9 items-center justify-center border border-[#1B3A5C] bg-[#1B3A5C] text-white">
+              <FileCheck2 className="h-5 w-5 text-white" />
             </div>
             <div>
               <div className="flex items-center gap-1.5">
-                <span className="font-bold tracking-tight text-zinc-950 text-base">VOUCH</span>
-                <span className="rounded bg-sky-100 px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-sky-800">
-                  Verified
+                <span className="font-display font-semibold tracking-tight text-[#1A1915] text-base">VOUCH</span>
+                <span className="border border-[#1B3A5C]/30 bg-[#E9EFF5] px-1.5 py-0.2 font-mono text-[9px] font-semibold uppercase tracking-wider text-[#1B3A5C]">
+                  LEDGER v3.0
                 </span>
               </div>
-              <p className="text-[10px] font-medium text-zinc-500 hidden sm:block">
-                Skill Identity & Matching
+              <p className="font-mono text-[10px] text-[#8A8571] hidden sm:block">
+                Technical Verification System
               </p>
             </div>
           </Link>
@@ -87,13 +86,13 @@ export function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`flex items-center gap-2 px-3 py-2 text-xs font-medium rounded-md transition-colors ${
+                  className={`flex items-center gap-2 px-3 py-2 text-xs font-medium transition-colors ${
                     isActive
-                      ? "bg-zinc-100 text-zinc-900 font-semibold"
-                      : "text-zinc-600 hover:text-zinc-900 hover:bg-zinc-50"
+                      ? "border-b-2 border-[#1B3A5C] bg-[#E9EFF5] text-[#1B3A5C] font-semibold"
+                      : "text-[#8A8571] hover:text-[#1A1915] hover:bg-[#F3F1EA]"
                   }`}
                 >
-                  <Icon className={`h-4 w-4 ${isActive ? "text-sky-600" : "text-zinc-400"}`} />
+                  <Icon className={`h-3.5 w-3.5 ${isActive ? "text-[#1B3A5C]" : "text-[#8A8571]"}`} />
                   {link.label}
                 </Link>
               );
@@ -103,24 +102,24 @@ export function Navbar() {
 
         {/* Right Controls */}
         <div className="flex items-center gap-3">
-          {/* Persona Switcher for Quick Demo */}
+          {/* Persona Switcher */}
           <div className="relative">
             <button
               onClick={() => setShowRoleMenu(!showRoleMenu)}
-              className="flex items-center gap-2 rounded-md border border-zinc-200 bg-zinc-50 px-2.5 py-1.5 text-xs font-medium text-zinc-700 hover:bg-zinc-100 transition-colors"
-              title="Switch role view for demo"
+              className="flex items-center gap-2 border border-[#D9D5C7] bg-[#FBFAF7] px-2.5 py-1.5 font-mono text-xs text-[#3D3A31] hover:border-[#B8B29D] transition-colors"
+              title="Switch role view for demonstration"
             >
-              <span className={`h-2 w-2 rounded-full ${isAuthenticated ? "bg-emerald-500" : "bg-amber-500"}`}></span>
-              <span className="capitalize font-semibold">
-                {isAuthenticated && user ? user.fullName.split(" ")[0] : "Guest / Logged Out"}
+              <span className={`h-2 w-2 ${isAuthenticated ? "bg-[#2F6844]" : "bg-[#9A6B1F]"}`}></span>
+              <span className="capitalize font-medium">
+                {isAuthenticated && user ? user.fullName.split(" ")[0] : "Guest Specimen"}
               </span>
-              <ChevronDown className="h-3.5 w-3.5 text-zinc-400" />
+              <ChevronDown className="h-3.5 w-3.5 text-[#8A8571]" />
             </button>
 
             {showRoleMenu && (
-              <div className="absolute right-0 mt-2 w-64 origin-top-right rounded-lg border border-zinc-200 bg-white p-1.5 shadow-lg ring-1 ring-black/5 z-50">
-                <div className="px-2 py-1 text-[10px] font-semibold uppercase text-zinc-400">
-                  Switch Active Persona
+              <div className="absolute right-0 mt-1 w-64 origin-top-right border border-[#D9D5C7] bg-white p-1.5 z-50">
+                <div className="border-b border-[#D9D5C7] px-2 py-1 font-mono text-[10px] uppercase text-[#8A8571]">
+                  Switch Demo Persona
                 </div>
                 {DEMO_PERSONAS.map((p) => {
                   const isActive = user?.id === p.id;
@@ -131,32 +130,32 @@ export function Navbar() {
                         loginWithPersona(p.id);
                         setShowRoleMenu(false);
                       }}
-                      className={`w-full text-left px-2.5 py-2 text-xs rounded-md flex flex-col transition-colors ${
+                      className={`w-full text-left px-2.5 py-2 text-xs flex flex-col transition-colors ${
                         isActive
-                          ? "bg-sky-50 text-sky-950 font-semibold border border-sky-200/60"
-                          : "hover:bg-zinc-50 text-zinc-700"
+                          ? "bg-[#E9EFF5] text-[#1B3A5C] font-semibold border-l-2 border-[#1B3A5C]"
+                          : "hover:bg-[#F3F1EA] text-[#3D3A31]"
                       }`}
                     >
                       <div className="flex items-center justify-between">
-                        <span className="font-semibold">{p.name}</span>
-                        <span className="text-[10px] uppercase font-bold text-zinc-400">{p.role.replace("_", " ")}</span>
+                        <span className="font-display font-medium">{p.name}</span>
+                        <span className="font-mono text-[9px] uppercase text-[#8A8571]">{p.role.replace("_", " ")}</span>
                       </div>
-                      <span className="text-[10px] text-zinc-500 font-normal mt-0.5">{p.description}</span>
+                      <span className="text-[10px] text-[#8A8571] font-normal mt-0.5">{p.description}</span>
                     </button>
                   );
                 })}
 
                 {isAuthenticated && (
-                  <div className="mt-1 border-t border-zinc-100 pt-1">
+                  <div className="mt-1 border-t border-[#D9D5C7] pt-1">
                     <button
                       onClick={() => {
                         logout();
                         setShowRoleMenu(false);
                       }}
-                      className="w-full text-left px-2.5 py-1.5 text-xs text-rose-600 hover:bg-rose-50 rounded-md flex items-center gap-2 font-medium"
+                      className="w-full text-left px-2.5 py-1.5 font-mono text-xs text-[#8C2F2F] hover:bg-[#FDF2F2] flex items-center gap-2"
                     >
                       <LogOut className="h-3.5 w-3.5" />
-                      Sign Out (Test Logged Out)
+                      Sign out (test logged-out state)
                     </button>
                   </div>
                 )}
@@ -164,69 +163,66 @@ export function Navbar() {
             )}
           </div>
 
-          {/* Notifications Dropdown */}
+          {/* Notifications Drawer */}
           <div className="relative">
             <button
               onClick={() => setShowNotifs(!showNotifs)}
-              className="relative rounded-md p-2 text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 transition-colors"
+              className="relative border border-[#D9D5C7] bg-[#FBFAF7] p-2 text-[#3D3A31] hover:border-[#B8B29D] transition-colors"
               aria-label="Notifications"
             >
               <Bell className="h-4 w-4" />
               {unreadCount > 0 && (
-                <span className="absolute top-1.5 right-1.5 flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-600"></span>
-                </span>
+                <span className="absolute top-1 right-1 flex h-2 w-2 bg-[#8C2F2F]"></span>
               )}
             </button>
 
             {showNotifs && (
-              <div className="absolute right-0 mt-2 w-80 sm:w-96 origin-top-right rounded-lg border border-zinc-200 bg-white shadow-xl ring-1 ring-black/5 z-50">
-                <div className="flex items-center justify-between border-b border-zinc-100 px-4 py-3">
+              <div className="absolute right-0 mt-1 w-80 sm:w-96 origin-top-right border border-[#D9D5C7] bg-white z-50">
+                <div className="flex items-center justify-between border-b border-[#D9D5C7] px-4 py-3 bg-[#FBFAF7]">
                   <div className="flex items-center gap-2">
-                    <span className="font-semibold text-xs text-zinc-900">Notifications</span>
+                    <span className="font-display font-semibold text-xs text-[#1A1915]">Verification Notices</span>
                     {unreadCount > 0 && (
-                      <span className="rounded-full bg-sky-100 px-1.5 py-0.2 text-[10px] font-bold text-sky-700">
-                        {unreadCount}
+                      <span className="border border-[#8C2F2F]/30 bg-[#FDF2F2] px-1.5 py-0.2 font-mono text-[9px] font-bold text-[#8C2F2F]">
+                        {unreadCount} UNREAD
                       </span>
                     )}
                   </div>
                   {unreadCount > 0 && (
                     <button
                       onClick={markAllRead}
-                      className="text-[11px] font-medium text-sky-600 hover:text-sky-800"
+                      className="font-mono text-[10px] text-[#1B3A5C] hover:underline"
                     >
-                      Mark all as read
+                      mark all read
                     </button>
                   )}
                 </div>
-                <div className="max-h-72 overflow-y-auto divide-y divide-zinc-100">
+                <div className="max-h-72 overflow-y-auto divide-y divide-[#D9D5C7]">
                   {notifications.length === 0 ? (
-                    <div className="px-4 py-6 text-center text-xs text-zinc-500">
-                      No notifications yet
+                    <div className="px-4 py-6 text-center text-xs text-[#8A8571]">
+                      No notices registered
                     </div>
                   ) : (
                     notifications.map((n) => (
                       <div
                         key={n.id}
                         className={`p-3 text-xs transition-colors ${
-                          n.read ? "bg-white text-zinc-600" : "bg-sky-50/40 text-zinc-900 font-medium"
+                          n.read ? "bg-white text-[#3D3A31]" : "bg-[#E9EFF5]/50 text-[#1A1915]"
                         }`}
                       >
                         <div className="flex items-start justify-between gap-2">
-                          <p className="font-semibold text-xs text-zinc-900">{n.title}</p>
-                          <span className="text-[10px] text-zinc-400 whitespace-nowrap">
+                          <p className="font-medium text-xs text-[#1A1915]">{n.title}</p>
+                          <span className="font-mono text-[10px] text-[#8A8571] whitespace-nowrap">
                             {new Date(n.createdAt).toLocaleDateString()}
                           </span>
                         </div>
-                        <p className="mt-1 text-zinc-600 leading-relaxed text-[11px]">{n.message}</p>
+                        <p className="mt-1 text-[#3D3A31] leading-relaxed text-[11px]">{n.message}</p>
                         {n.link && (
                           <Link
                             href={n.link}
                             onClick={() => setShowNotifs(false)}
-                            className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-sky-600 hover:underline"
+                            className="mt-2 inline-flex items-center gap-1 font-mono text-[11px] text-[#1B3A5C] hover:underline"
                           >
-                            View details <ExternalLink className="h-3 w-3" />
+                            Examine entry <ExternalLink className="h-3 w-3" />
                           </Link>
                         )}
                       </div>
@@ -241,18 +237,18 @@ export function Navbar() {
           {!isAuthenticated ? (
             <Link
               href="/login"
-              className="inline-flex items-center gap-1.5 rounded-md bg-zinc-950 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 shadow-sm transition-colors"
+              className="inline-flex items-center gap-1.5 border border-[#1B3A5C] bg-[#1B3A5C] px-3 py-1.5 font-mono text-xs font-medium text-white hover:bg-[#152e4a] transition-colors"
             >
-              <LogIn className="h-3.5 w-3.5 text-sky-400" />
-              Sign In
+              <LogIn className="h-3.5 w-3.5 text-white" />
+              Sign in
             </Link>
           ) : (
             <Link
               href="/assessments"
-              className="hidden sm:inline-flex items-center gap-1.5 rounded-md bg-zinc-900 px-3 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 shadow-sm transition-colors"
+              className="hidden sm:inline-flex items-center gap-1.5 border border-[#1B3A5C] bg-[#1B3A5C] px-3 py-1.5 font-mono text-xs font-medium text-white hover:bg-[#152e4a] transition-colors"
             >
-              <Sparkles className="h-3.5 w-3.5 text-sky-400" />
-              Verify Skills
+              <FileCheck2 className="h-3.5 w-3.5 text-white" />
+              Take assessment
             </Link>
           )}
         </div>
@@ -260,3 +256,4 @@ export function Navbar() {
     </header>
   );
 }
+

@@ -2,35 +2,24 @@
 
 import React, { useState, useEffect } from "react";
 import {
-  Users,
   Plus,
   Search,
-  Filter,
-  Sparkles,
-  ShieldCheck,
-  CheckCircle2,
   AlertCircle,
-  ExternalLink,
-  ChevronRight,
-  Send,
   Check,
   X,
   UserPlus,
-  SlidersHorizontal,
-  Target,
-  Layers,
 } from "lucide-react";
 import { SkillCoverageBar } from "@/components/SkillCoverageBar";
 import { CandidateMatchCard } from "@/components/CandidateMatchCard";
 import { EmptyState } from "@/components/ui/EmptyState";
-import { CandidateMatch, Skill, Team, TeamJoinRequest, TeamVerificationTest } from "@/types";
+import { CandidateMatch, Team, TeamVerificationTest } from "@/types";
 
 export default function TeamsPage() {
   const [teams, setTeams] = useState<Team[]>([]);
   const [selectedTeam, setSelectedTeam] = useState<Team | null>(null);
   const [teamDetails, setTeamDetails] = useState<any | null>(null);
   const [candidateMatches, setCandidateMatches] = useState<CandidateMatch[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
 
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState("");
@@ -129,7 +118,7 @@ export default function TeamsPage() {
       });
       const json = await res.json();
       if (json.success) {
-        alert("Join request submitted to team leader!");
+        alert("Join request submitted to squad leader!");
         loadTeamDetails(teamId);
       } else {
         alert(json.error?.message || "Failed to submit request.");
@@ -206,93 +195,93 @@ export default function TeamsPage() {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="rounded bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-800 uppercase tracking-wider">
+            <span className="border border-[#1B3A5C]/30 bg-[#E9EFF5] px-2 py-0.5 font-mono text-[10px] font-semibold text-[#1B3A5C] uppercase tracking-wider">
               Hackathon Capability Matching
             </span>
-            <span className="text-xs text-zinc-400">·</span>
-            <span className="text-xs text-zinc-500 font-medium">Complementarity over Similarity</span>
+            <span className="text-xs text-[#D9D5C7]">|</span>
+            <span className="font-mono text-xs text-[#8A8571]">Complementarity over Similarity</span>
           </div>
-          <h1 className="text-2xl font-bold text-zinc-950 mt-1">Hackathon Teams & Verification</h1>
-          <p className="text-xs text-zinc-600 mt-1 max-w-2xl leading-relaxed">
+          <h1 className="font-display text-2xl font-semibold text-[#1A1915] mt-1">Hackathon Squads & Verification</h1>
+          <p className="text-xs text-[#3D3A31] mt-1 max-w-2xl leading-relaxed">
             Form high-performing teams based on missing technical skills. Test potential candidates before accepting them into your squad.
           </p>
         </div>
 
         <button
           onClick={() => setShowCreateTeam(true)}
-          className="inline-flex items-center gap-1.5 rounded-lg bg-zinc-950 px-4 py-2 text-xs font-semibold text-white hover:bg-zinc-800 transition-colors shadow-2xs"
+          className="inline-flex items-center gap-1.5 bg-[#1B3A5C] px-4 py-2 font-mono text-xs font-medium text-white hover:bg-[#152e4a] transition-colors"
         >
           <Plus className="h-4 w-4" />
-          Create Team
+          Create squad
         </button>
       </div>
 
       {/* Create Team Modal */}
       {showCreateTeam && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-in fade-in duration-150">
           <form
             onSubmit={handleCreateTeam}
-            className="w-full max-w-md rounded-xl border border-zinc-200 bg-white p-6 shadow-xl space-y-4"
+            className="w-full max-w-md border border-[#D9D5C7] bg-white p-6 space-y-4"
           >
-            <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
-              <h2 className="font-bold text-base text-zinc-950">Create Hackathon Team</h2>
+            <div className="flex items-center justify-between border-b border-[#D9D5C7] pb-3">
+              <h2 className="font-display font-semibold text-base text-[#1A1915]">Create Hackathon Squad</h2>
               <button
                 type="button"
                 onClick={() => setShowCreateTeam(false)}
-                className="rounded p-1 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100"
+                className="p-1 text-[#8A8571] hover:text-[#1A1915]"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-zinc-800 mb-1">Team Name</label>
+              <label className="block font-mono text-xs text-[#1A1915] mb-1">Squad Name</label>
               <input
                 type="text"
                 required
                 placeholder="e.g. ZeroLag Protocol"
                 value={newTeamName}
                 onChange={(e) => setNewTeamName(e.target.value)}
-                className="w-full rounded-md border border-zinc-300 p-2 text-xs text-zinc-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-500"
+                className="w-full border border-[#D9D5C7] p-2 font-mono text-xs text-[#1A1915] bg-[#FBFAF7]"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-zinc-800 mb-1">Hackathon Name</label>
+              <label className="block font-mono text-xs text-[#1A1915] mb-1">Hackathon Name</label>
               <input
                 type="text"
                 required
                 placeholder="e.g. ETHGlobal London 2025"
                 value={newTeamHackathon}
                 onChange={(e) => setNewTeamHackathon(e.target.value)}
-                className="w-full rounded-md border border-zinc-300 p-2 text-xs text-zinc-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-500"
+                className="w-full border border-[#D9D5C7] p-2 font-mono text-xs text-[#1A1915] bg-[#FBFAF7]"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-zinc-800 mb-1">Project Description</label>
+              <label className="block font-mono text-xs text-[#1A1915] mb-1">Project Description</label>
               <textarea
                 rows={2}
                 placeholder="What are you planning to build?"
                 value={newTeamDesc}
                 onChange={(e) => setNewTeamDesc(e.target.value)}
-                className="w-full rounded-md border border-zinc-300 p-2 text-xs text-zinc-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-500"
+                className="w-full border border-[#D9D5C7] p-2 text-xs text-[#1A1915] bg-[#FBFAF7]"
               />
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-zinc-100">
+            <div className="flex justify-end gap-2 pt-2 border-t border-[#D9D5C7]">
               <button
                 type="button"
                 onClick={() => setShowCreateTeam(false)}
-                className="rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-600 hover:bg-zinc-50"
+                className="border border-[#D9D5C7] bg-[#FBFAF7] px-3 py-1.5 font-mono text-xs font-medium text-[#8A8571] hover:bg-[#F3F1EA]"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="rounded-md bg-zinc-950 px-4 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 shadow-2xs"
+                className="bg-[#1B3A5C] px-4 py-1.5 font-mono text-xs font-medium text-white hover:bg-[#152e4a]"
               >
-                Create Team
+                Create squad
               </button>
             </div>
           </form>
@@ -305,20 +294,20 @@ export default function TeamsPage() {
         <div className="lg:col-span-5 space-y-4">
           <div className="flex items-center gap-2">
             <div className="relative flex-1">
-              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-zinc-400" />
+              <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-[#8A8571]" />
               <input
                 type="text"
-                placeholder="Search teams or hackathons..."
+                placeholder="Search squads or hackathons..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-lg border border-zinc-200 bg-white py-2 pl-8 pr-3 text-xs text-zinc-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-500 shadow-2xs"
+                className="w-full border border-[#D9D5C7] bg-white py-2 pl-8 pr-3 font-mono text-xs text-[#1A1915]"
               />
             </div>
 
             <select
               value={selectedSkillFilter}
               onChange={(e) => setSelectedSkillFilter(e.target.value)}
-              className="rounded-lg border border-zinc-200 bg-white px-2.5 py-2 text-xs text-zinc-700 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-500 shadow-2xs"
+              className="border border-[#D9D5C7] bg-white px-2.5 py-2 font-mono text-xs text-[#3D3A31]"
             >
               <option value="">All Skills</option>
               <option value="react">React</option>
@@ -331,7 +320,7 @@ export default function TeamsPage() {
           <div className="space-y-3">
             {filteredTeams.length === 0 ? (
               <EmptyState
-                title="No teams found"
+                title="No squads found"
                 description="Try adjusting your search terms or skill filter to discover hackathon squads."
               />
             ) : (
@@ -341,29 +330,29 @@ export default function TeamsPage() {
                   <div
                     key={t.id}
                     onClick={() => loadTeamDetails(t.id)}
-                    className={`cursor-pointer rounded-xl border p-4 transition-all shadow-2xs ${
+                    className={`cursor-pointer border p-4 transition-all ${
                       isSelected
-                        ? "border-sky-600 bg-sky-50/50 ring-2 ring-sky-600/20"
-                        : "border-zinc-200 bg-white hover:border-zinc-300"
+                        ? "border-[#1B3A5C] bg-[#E9EFF5]/40"
+                        : "border-[#D9D5C7] bg-white hover:border-[#B8B29D]"
                     }`}
                   >
                     <div className="flex items-start justify-between">
                       <div>
-                        <h3 className="font-bold text-sm text-zinc-950">{t.name}</h3>
-                        <p className="text-xs text-zinc-500">{t.hackathonName}</p>
+                        <h3 className="font-display font-semibold text-sm text-[#1A1915]">{t.name}</h3>
+                        <p className="font-mono text-xs text-[#8A8571]">{t.hackathonName}</p>
                       </div>
                       <span
-                        className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
+                        className={`border px-2 py-0.5 font-mono text-[10px] font-semibold uppercase ${
                           t.status === "open"
-                            ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
-                            : "bg-zinc-100 text-zinc-600 border border-zinc-200"
+                            ? "border-[#2F6844]/30 bg-[#EBF2EC] text-[#2F6844]"
+                            : "border-[#D9D5C7] bg-[#FBFAF7] text-[#8A8571]"
                         }`}
                       >
                         {t.status}
                       </span>
                     </div>
 
-                    <p className="text-xs text-zinc-600 mt-2 line-clamp-2 leading-relaxed">
+                    <p className="text-xs text-[#3D3A31] mt-2 line-clamp-2 leading-relaxed">
                       {t.description}
                     </p>
 
@@ -371,16 +360,16 @@ export default function TeamsPage() {
                       {t.requirements?.map((req) => (
                         <span
                           key={req.id}
-                          className="rounded bg-zinc-100 px-1.5 py-0.5 text-[10px] font-medium text-zinc-700 border border-zinc-200/60"
+                          className="border border-[#D9D5C7] bg-[#FBFAF7] px-1.5 py-0.5 font-mono text-[10px] text-[#3D3A31]"
                         >
                           {req.skillName || req.skillId}
                         </span>
                       ))}
                     </div>
 
-                    <div className="mt-3 flex items-center justify-between text-[11px] text-zinc-400 pt-2 border-t border-zinc-100">
-                      <span>Leader: <strong className="text-zinc-600 font-semibold">{t.leaderName}</strong></span>
-                      <span className="font-medium text-zinc-600">{t.members?.length || 1}/{t.maxMembers || 4} Members</span>
+                    <div className="mt-3 flex items-center justify-between font-mono text-[11px] text-[#8A8571] pt-2 border-t border-[#D9D5C7]">
+                      <span>Leader: <strong className="text-[#1A1915]">{t.leaderName}</strong></span>
+                      <span className="text-[#1A1915]">{t.members?.length || 1}/{t.maxMembers || 4} Members</span>
                     </div>
                   </div>
                 );
@@ -394,38 +383,38 @@ export default function TeamsPage() {
           {selectedTeam && teamDetails ? (
             <>
               {/* Selected Team Banner */}
-              <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-xs">
+              <div className="border border-[#D9D5C7] bg-white p-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-2">
-                      <h2 className="text-xl font-bold text-zinc-950">{selectedTeam.name}</h2>
-                      <span className="rounded bg-sky-100 px-2.5 py-0.5 text-[10px] font-bold text-sky-800 uppercase tracking-wider">
+                      <h2 className="font-display text-xl font-semibold text-[#1A1915]">{selectedTeam.name}</h2>
+                      <span className="border border-[#1B3A5C]/30 bg-[#E9EFF5] px-2.5 py-0.5 font-mono text-[10px] font-semibold text-[#1B3A5C] uppercase tracking-wider">
                         {selectedTeam.hackathonName}
                       </span>
                     </div>
-                    <p className="text-xs text-zinc-600 mt-1.5 leading-relaxed">{selectedTeam.description}</p>
+                    <p className="text-xs text-[#3D3A31] mt-1.5 leading-relaxed">{selectedTeam.description}</p>
                   </div>
 
                   <button
                     onClick={() => handleJoinRequest(selectedTeam.id)}
-                    className="shrink-0 inline-flex items-center gap-1.5 rounded-lg bg-zinc-950 px-3.5 py-2 text-xs font-semibold text-white hover:bg-zinc-800 transition-colors shadow-2xs"
+                    className="shrink-0 inline-flex items-center gap-1.5 bg-[#1B3A5C] px-3.5 py-2 font-mono text-xs font-medium text-white hover:bg-[#152e4a] transition-colors"
                   >
                     <UserPlus className="h-3.5 w-3.5" />
-                    Request to Join
+                    Request to join
                   </button>
                 </div>
 
                 {/* Members list */}
-                <div className="mt-5 border-t border-zinc-100 pt-3.5">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400">Current Members</span>
+                <div className="mt-5 border-t border-[#D9D5C7] pt-3.5">
+                  <span className="font-mono text-[11px] font-medium uppercase text-[#8A8571]">Current Squad Members</span>
                   <div className="mt-2 flex flex-wrap gap-2">
                     {selectedTeam.members?.map((m) => (
                       <div
                         key={m.id}
-                        className="flex items-center gap-2 rounded-lg border border-zinc-200 bg-zinc-50/80 px-2.5 py-1 text-xs"
+                        className="flex items-center gap-2 border border-[#D9D5C7] bg-[#FBFAF7] px-2.5 py-1 text-xs"
                       >
-                        <span className="font-semibold text-zinc-850">{m.candidateName}</span>
-                        <span className="text-[10px] text-zinc-400">({m.role})</span>
+                        <span className="font-display font-medium text-[#1A1915]">{m.candidateName}</span>
+                        <span className="font-mono text-[10px] text-[#8A8571]">({m.role})</span>
                       </div>
                     ))}
                   </div>
@@ -436,14 +425,13 @@ export default function TeamsPage() {
               {teamDetails.coverage && <SkillCoverageBar coverage={teamDetails.coverage} />}
 
               {/* Team Verification Challenge Requests */}
-              <div className="rounded-xl border border-zinc-200 bg-white p-6 shadow-xs">
-                <div className="flex items-center justify-between mb-4">
+              <div className="border border-[#D9D5C7] bg-white p-6">
+                <div className="flex items-center justify-between mb-4 border-b border-[#D9D5C7] pb-3">
                   <div>
-                    <h3 className="font-bold text-sm text-zinc-950 flex items-center gap-1.5">
-                      <ShieldCheck className="h-4 w-4 text-sky-600" />
+                    <h3 className="font-display font-semibold text-sm text-[#1A1915]">
                       Team Verification Tests & Decisions
                     </h3>
-                    <p className="text-xs text-zinc-500 mt-0.5">
+                    <p className="text-xs text-[#8A8571] mt-0.5">
                       Test potential candidates before accepting them into the squad
                     </p>
                   </div>
@@ -457,20 +445,20 @@ export default function TeamsPage() {
                     />
                   ) : (
                     teamDetails.verificationTests.map((vt: TeamVerificationTest) => (
-                      <div key={vt.id} className="rounded-lg border border-zinc-200 p-3.5 bg-zinc-50/40 text-xs">
+                      <div key={vt.id} className="border border-[#D9D5C7] p-3.5 bg-[#FBFAF7] text-xs">
                         <div className="flex items-center justify-between">
                           <div>
-                            <span className="font-bold text-zinc-950">{vt.candidateName}</span>
-                            <span className="text-zinc-400"> · </span>
-                            <span className="text-zinc-600 font-medium">{vt.skillName} ({vt.difficulty})</span>
+                            <span className="font-display font-semibold text-[#1A1915]">{vt.candidateName}</span>
+                            <span className="text-[#8A8571]"> · </span>
+                            <span className="font-mono text-[#3D3A31]">{vt.skillName} ({vt.difficulty})</span>
                           </div>
                           <span
-                            className={`rounded px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider ${
+                            className={`border px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider ${
                               vt.status === "completed" || vt.status === "accepted"
-                                ? "bg-emerald-100 text-emerald-800 border border-emerald-200"
+                                ? "bg-[#EBF2EC] text-[#2F6844] border-[#2F6844]/30"
                                 : vt.status === "rejected"
-                                ? "bg-rose-100 text-rose-800 border border-rose-200"
-                                : "bg-amber-100 text-amber-800 border border-amber-200"
+                                ? "bg-[#FDF2F2] text-[#8C2F2F] border-[#8C2F2F]/30"
+                                : "bg-[#FDF6EC] text-[#9A6B1F] border-[#9A6B1F]/30"
                             }`}
                           >
                             {vt.status}
@@ -478,34 +466,34 @@ export default function TeamsPage() {
                         </div>
 
                         {vt.candidateScore !== undefined && (
-                          <div className="mt-2 flex items-center gap-4 text-[11px]">
+                          <div className="mt-2 flex items-center gap-4 font-mono text-[11px] text-[#8A8571]">
                             <span>
-                              Required: <strong>{vt.requiredScore}%</strong>
+                              Required: <strong className="text-[#1A1915]">{vt.requiredScore}%</strong>
                             </span>
                             <span>
                               Candidate Result:{" "}
-                              <strong className={vt.candidateScore >= vt.requiredScore ? "text-emerald-700" : "text-amber-700"}>
+                              <strong className={vt.candidateScore >= vt.requiredScore ? "text-[#2F6844]" : "text-[#9A6B1F]"}>
                                 {vt.candidateScore}%
                               </strong>
                             </span>
                             {vt.integrityScore && (
-                              <span className="text-zinc-500 font-mono">Focus Score: {vt.integrityScore}/100</span>
+                              <span className="text-[#8A8571]">Focus Score: {vt.integrityScore}/100</span>
                             )}
                           </div>
                         )}
 
                         {/* Leader Accept / Reject Controls */}
                         {vt.status === "completed" && (
-                          <div className="mt-3 flex items-center gap-2 border-t border-zinc-200/60 pt-2.5">
+                          <div className="mt-3 flex items-center gap-2 border-t border-[#D9D5C7] pt-2.5">
                             <button
                               onClick={() => handleDecision(vt.id, "accepted")}
-                              className="inline-flex items-center gap-1 rounded bg-emerald-700 px-3 py-1 text-xs font-semibold text-white hover:bg-emerald-800 shadow-2xs"
+                              className="inline-flex items-center gap-1 bg-[#2F6844] px-3 py-1 font-mono text-xs font-medium text-white hover:bg-[#265337] transition-colors"
                             >
-                              <Check className="h-3 w-3" /> Accept into Team
+                              <Check className="h-3 w-3" /> Accept into squad
                             </button>
                             <button
                               onClick={() => handleDecision(vt.id, "rejected")}
-                              className="inline-flex items-center gap-1 rounded border border-zinc-300 bg-white px-3 py-1 text-xs font-semibold text-zinc-700 hover:bg-zinc-100 shadow-2xs"
+                              className="inline-flex items-center gap-1 border border-[#D9D5C7] bg-white px-3 py-1 font-mono text-xs font-medium text-[#8C2F2F] hover:bg-[#FDF2F2] transition-colors"
                             >
                               <X className="h-3 w-3" /> Reject
                             </button>
@@ -519,14 +507,11 @@ export default function TeamsPage() {
 
               {/* Explainable Candidate Recommendations */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="font-bold text-sm text-zinc-950 flex items-center gap-1.5">
-                      <Sparkles className="h-4 w-4 text-sky-600" />
-                      Recommended Candidates for Missing Gaps
-                    </h3>
-                    <p className="text-xs text-zinc-500">Ranked by algorithmic compatibility score</p>
-                  </div>
+                <div className="border-b border-[#D9D5C7] pb-2">
+                  <h3 className="font-display font-semibold text-sm text-[#1A1915]">
+                    Recommended Candidates for Missing Gaps
+                  </h3>
+                  <p className="text-xs text-[#8A8571]">Ranked by algorithmic compatibility score</p>
                 </div>
 
                 <div className="space-y-3">
@@ -552,7 +537,7 @@ export default function TeamsPage() {
               </div>
             </>
           ) : (
-            <div className="rounded-xl border border-zinc-200 bg-white p-12 text-center text-zinc-400 text-xs shadow-2xs">
+            <div className="border border-[#D9D5C7] bg-white p-12 text-center text-[#8A8571] text-xs">
               Select a team on the left to view requirements, capability coverage, and candidates.
             </div>
           )}
@@ -561,43 +546,43 @@ export default function TeamsPage() {
 
       {/* Issue Verification Challenge Modal */}
       {verifyModalCandidate && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-xs p-4 animate-in fade-in duration-150">
-          <div className="w-full max-w-md rounded-xl border border-zinc-200 bg-white p-6 shadow-xl space-y-4">
-            <div className="flex items-center justify-between border-b border-zinc-100 pb-3">
-              <h2 className="font-bold text-base text-zinc-950">Issue Team Verification Challenge</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4 animate-in fade-in duration-150">
+          <div className="w-full max-w-md border border-[#D9D5C7] bg-white p-6 space-y-4">
+            <div className="flex items-center justify-between border-b border-[#D9D5C7] pb-3">
+              <h2 className="font-display font-semibold text-base text-[#1A1915]">Issue Team Verification Challenge</h2>
               <button
                 onClick={() => {
                   setVerifyModalCandidate(null);
                   setVerifyError(null);
                 }}
-                className="rounded p-1 text-zinc-400 hover:text-zinc-600 hover:bg-zinc-100"
+                className="p-1 text-[#8A8571] hover:text-[#1A1915]"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
 
-            <p className="text-xs text-zinc-500 leading-relaxed">
+            <p className="text-xs text-[#8A8571] leading-relaxed">
               The candidate will receive an invitation to take this technical assessment. You can evaluate their result and integrity signals before accepting.
             </p>
 
             {/* Rate Limit Alert Banner */}
             {verifyError && (
-              <div className="rounded-lg border border-rose-200 bg-rose-50/90 p-3 text-xs text-rose-950 space-y-1.5 animate-in fade-in">
-                <div className="flex items-center gap-1.5 font-bold text-rose-950">
-                  <AlertCircle className="h-4 w-4 text-rose-600 shrink-0" />
+              <div className="border border-[#8C2F2F]/30 bg-[#FDF2F2] p-3 text-xs text-[#8C2F2F] space-y-1.5">
+                <div className="flex items-center gap-1.5 font-mono font-semibold">
+                  <AlertCircle className="h-4 w-4 text-[#8C2F2F] shrink-0" />
                   <span>Rate Limit Cooldown Active (48h Limit)</span>
                 </div>
-                <p className="text-[11px] leading-relaxed text-rose-800">{verifyError.message}</p>
+                <p className="text-[11px] leading-relaxed">{verifyError.message}</p>
                 {verifyError.retryAvailableAt && (
-                  <div className="mt-1.5 pt-1.5 border-t border-rose-200/80 flex items-center justify-between text-[11px]">
-                    <span className="font-medium text-rose-700">Cooldown Remaining:</span>
-                    <span className="font-mono font-bold text-rose-950">
+                  <div className="mt-1.5 pt-1.5 border-t border-[#8C2F2F]/20 flex items-center justify-between text-[11px] font-mono">
+                    <span>Cooldown Remaining:</span>
+                    <span className="font-bold">
                       ~{verifyError.hoursRemaining}h remaining
                     </span>
                   </div>
                 )}
                 {verifyError.retryAvailableAt && (
-                  <p className="text-[10px] text-rose-600 italic">
+                  <p className="text-[10px] italic">
                     Re-test available at: {new Date(verifyError.retryAvailableAt).toLocaleString()}
                   </p>
                 )}
@@ -605,14 +590,14 @@ export default function TeamsPage() {
             )}
 
             <div>
-              <label className="block text-xs font-semibold text-zinc-800 mb-1">Select Skill</label>
+              <label className="block font-mono text-xs text-[#1A1915] mb-1">Select Skill</label>
               <select
                 value={verifySkill}
                 onChange={(e) => {
                   setVerifySkill(e.target.value);
                   setVerifyError(null);
                 }}
-                className="w-full rounded-md border border-zinc-300 p-2 text-xs text-zinc-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-500"
+                className="w-full border border-[#D9D5C7] p-2 font-mono text-xs text-[#1A1915] bg-[#FBFAF7]"
               >
                 <option value="react">React</option>
                 <option value="python">Python</option>
@@ -628,11 +613,11 @@ export default function TeamsPage() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-zinc-800 mb-1">Difficulty</label>
+              <label className="block font-mono text-xs text-[#1A1915] mb-1">Difficulty</label>
               <select
                 value={verifyDifficulty}
                 onChange={(e) => setVerifyDifficulty(e.target.value)}
-                className="w-full rounded-md border border-zinc-300 p-2 text-xs text-zinc-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-500"
+                className="w-full border border-[#D9D5C7] p-2 font-mono text-xs text-[#1A1915] bg-[#FBFAF7]"
               >
                 <option value="beginner">Beginner</option>
                 <option value="intermediate">Intermediate</option>
@@ -642,10 +627,10 @@ export default function TeamsPage() {
 
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="block text-xs font-semibold text-zinc-800">
+                <label className="block font-mono text-xs text-[#1A1915]">
                   Required Passing Score
                 </label>
-                <span className="font-mono text-xs font-bold text-sky-700">{verifyRequiredScore}%</span>
+                <span className="font-mono text-xs font-semibold tabular-nums text-[#1B3A5C]">{verifyRequiredScore}%</span>
               </div>
               <input
                 type="range"
@@ -654,27 +639,27 @@ export default function TeamsPage() {
                 step={5}
                 value={verifyRequiredScore}
                 onChange={(e) => setVerifyRequiredScore(Number(e.target.value))}
-                className="w-full accent-sky-600"
+                className="w-full accent-[#1B3A5C]"
               />
             </div>
 
-            <div className="flex justify-end gap-2 pt-2 border-t border-zinc-100">
+            <div className="flex justify-end gap-2 pt-2 border-t border-[#D9D5C7]">
               <button
                 type="button"
                 onClick={() => {
                   setVerifyModalCandidate(null);
                   setVerifyError(null);
                 }}
-                className="rounded-md border border-zinc-200 bg-white px-3 py-1.5 text-xs font-semibold text-zinc-600 hover:bg-zinc-50"
+                className="border border-[#D9D5C7] bg-[#FBFAF7] px-3 py-1.5 font-mono text-xs font-medium text-[#8A8571] hover:bg-[#F3F1EA]"
               >
                 Cancel
               </button>
               <button
                 onClick={handleIssueVerificationTest}
                 disabled={isSubmittingVerify}
-                className="rounded-md bg-zinc-950 px-4 py-1.5 text-xs font-semibold text-white hover:bg-zinc-800 shadow-2xs disabled:opacity-50"
+                className="bg-[#1B3A5C] px-4 py-1.5 font-mono text-xs font-medium text-white hover:bg-[#152e4a] disabled:opacity-50"
               >
-                {isSubmittingVerify ? "Sending..." : "Send Challenge"}
+                {isSubmittingVerify ? "Sending..." : "Send challenge"}
               </button>
             </div>
           </div>
@@ -683,3 +668,4 @@ export default function TeamsPage() {
     </div>
   );
 }
+

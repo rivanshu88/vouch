@@ -1,4 +1,4 @@
-import { CandidateMatch, CandidateProfile, CandidateSkill, SkillLevel, Team, TeamRequirement } from "@/types";
+import { CandidateMatch, CandidateProfile, CandidateSkill, SkillLevel, Team } from "@/types";
 
 const LEVEL_WEIGHTS: Record<SkillLevel, number> = {
   beginner: 1,

@@ -208,6 +208,46 @@ export function calculateConsistencyScore(
     });
   }
 
+  // 4b. Presence Verification Telemetry (§4.8)
+  const presenceEvents = events.filter((e) => e.type === "presence_signal");
+  const absentEvents = presenceEvents.filter(
+    (e) => (e as RawIntegrityEvent).meta?.status === "face_absent"
+  );
+  if (presenceEvents.length > 0) {
+    if (absentEvents.length === 0) {
+      signals.push({
+        title: "Continuous Presence Verified",
+        description: "Candidate verified continuously present in camera frame throughout assessment.",
+        level: "positive",
+        pointsDeducted: 0,
+      });
+    } else {
+      absentEvents.forEach((ev, idx) => {
+        const ts = formatEventTimestamp(ev.timestamp);
+        if (idx === 0) {
+          signals.push({
+            title: `${ts} - Temporary presence departure (0 pts - grace threshold applied)`,
+            description: "Candidate temporarily out of camera frame (first occurrence forgiven by grace policy).",
+            level: "warning",
+            timestamp: String(ev.timestamp),
+            pointsDeducted: 0,
+          });
+        } else {
+          signals.push({
+            title: `${ts} - Face absence detected (-5 pts)`,
+            description: "Candidate unconfirmed in camera frame during assessment execution.",
+            level: "warning",
+            timestamp: String(ev.timestamp),
+            pointsDeducted: 5,
+          });
+        }
+      });
+      const penalizedPresence = Math.max(0, absentEvents.length - 1);
+      const presenceDeduction = Math.min(15, penalizedPresence * 5);
+      score -= presenceDeduction;
+    }
+  }
+
   // 5. Timing anomalies: > 2 std dev from question mean: 1st free, then -6 each
   let timingAnomalies = 0;
   if (answers.length > 0) {
