@@ -1,9 +1,13 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback } from "react";
+import React, { useState, useCallback } from "react";
 import { Camera, Move, Minimize2, Maximize2 } from "lucide-react";
+import {
+  usePresenceVerification,
+  PresenceEventType,
+} from "@/hooks/usePresenceVerification";
 
-export type PresenceStatus = "confirmed" | "face_absent" | "multiple_faces" | "low_confidence";
+export type PresenceStatus = PresenceEventType;
 
 interface PresenceVerificationPanelProps {
   stream: MediaStream | null;
@@ -16,105 +20,22 @@ export function PresenceVerificationPanel({
   onPresenceSignal,
   className = "",
 }: PresenceVerificationPanelProps) {
-  const videoRef = useRef<HTMLVideoElement | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const [status, setStatus] = useState<PresenceStatus>("confirmed");
-  const [statusMessage, setStatusMessage] = useState<string>("");
   const [isMinimized, setIsMinimized] = useState<boolean>(false);
   const [position, setPosition] = useState<"bottom-right" | "bottom-left">("bottom-right");
 
-  // Track stream attachment
-  useEffect(() => {
-    if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
-      videoRef.current.play().catch(() => {});
-    }
-  }, [stream]);
+  const handlePresenceEvent = useCallback(
+    (event: { type: PresenceEventType }) => {
+      onPresenceSignal?.(event.type);
+    },
+    [onPresenceSignal]
+  );
 
-  // Client-side lightweight presence analysis
-  useEffect(() => {
-    if (!stream) {
-      return;
-    }
-
-    let absenceCounter = 0;
-
-    const intervalId = setInterval(() => {
-      if (!videoRef.current || !canvasRef.current) return;
-      const video = videoRef.current;
-      const canvas = canvasRef.current;
-
-      if (video.readyState < 2) return;
-
-      const ctx = canvas.getContext("2d", { willReadFrequently: true });
-      if (!ctx) return;
-
-      canvas.width = 160;
-      canvas.height = 120;
-      ctx.drawImage(video, 0, 0, 160, 120);
-
-      try {
-        const frame = ctx.getImageData(0, 0, 160, 120);
-        const data = frame.data;
-        let totalBrightness = 0;
-
-        for (let i = 0; i < data.length; i += 16) {
-          totalBrightness += (data[i] + data[i + 1] + data[i + 2]) / 3;
-        }
-        const avgBrightness = totalBrightness / (data.length / 16);
-
-        // Low light / low confidence fallback
-        if (avgBrightness < 20) {
-          setStatus("low_confidence");
-          setStatusMessage("Low confidence — verify manually");
-          onPresenceSignal?.("low_confidence");
-          return;
-        }
-
-        // Check if window.FaceDetector is natively supported
-        if (typeof window !== "undefined" && "FaceDetector" in window) {
-          const detector = new (window as any).FaceDetector({ maxDetectedFaces: 3 });
-          detector
-            .detect(video)
-            .then((faces: any[]) => {
-              if (faces.length === 0) {
-                absenceCounter++;
-                // 3 intervals grace buffer (~4.5s) before emitting face_absent
-                if (absenceCounter >= 3) {
-                  setStatus("face_absent");
-                  setStatusMessage("We can't confirm you're in frame — move back into view.");
-                  onPresenceSignal?.("face_absent");
-                }
-              } else if (faces.length > 1) {
-                absenceCounter = 0;
-                setStatus("multiple_faces");
-                setStatusMessage("More than one person is currently in frame.");
-                onPresenceSignal?.("multiple_faces");
-              } else {
-                absenceCounter = 0;
-                setStatus("confirmed");
-                setStatusMessage("");
-              }
-            })
-            .catch(() => {
-              // Fallback to confirmed presence if API fails
-              setStatus("confirmed");
-              setStatusMessage("");
-            });
-        } else {
-          // Standard browser fallback: presence confirmed
-          absenceCounter = 0;
-          setStatus("confirmed");
-          setStatusMessage("");
-        }
-      } catch {
-        setStatus("confirmed");
-        setStatusMessage("");
-      }
-    }, 1500);
-
-    return () => clearInterval(intervalId);
-  }, [stream, onPresenceSignal]);
+  const { status, statusMessage, videoRef, canvasRef } = usePresenceVerification({
+    initialStream: stream,
+    onPresenceEvent: handlePresenceEvent,
+    detectionIntervalMs: 2500,
+    graceThresholdSeconds: 3,
+  });
 
   const togglePosition = useCallback(() => {
     setPosition((prev) => (prev === "bottom-right" ? "bottom-left" : "bottom-right"));
@@ -132,7 +53,7 @@ export function PresenceVerificationPanel({
         {/* Top edge indicator flag */}
         <div
           className={`absolute left-0 top-0 bottom-0 w-1 ${
-            status === "confirmed"
+            status === "presence_confirmed"
               ? "bg-[#2F6844]"
               : status === "low_confidence"
               ? "bg-[#8A8571]"
@@ -145,7 +66,7 @@ export function PresenceVerificationPanel({
           <div className="flex items-center gap-1.5">
             <span
               className={`h-2 w-2 rounded-full ${
-                status === "confirmed"
+                status === "presence_confirmed"
                   ? "bg-[#2F6844]"
                   : status === "low_confidence"
                   ? "bg-[#8A8571]"

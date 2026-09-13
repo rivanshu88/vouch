@@ -209,19 +209,40 @@ export function calculateConsistencyScore(
   }
 
   // 4b. Presence Verification Telemetry (§4.8)
-  const presenceEvents = events.filter((e) => e.type === "presence_signal");
-  const absentEvents = presenceEvents.filter(
-    (e) => (e as RawIntegrityEvent).meta?.status === "face_absent"
-  );
+  const isAbsent = (e: AssessmentEvent | RawIntegrityEvent) =>
+    e.type === "face_not_detected" ||
+    (e.type === "presence_signal" &&
+      ((e as RawIntegrityEvent).meta?.status === "face_not_detected" ||
+        (e as RawIntegrityEvent).meta?.status === "face_absent"));
+
+  const isMultipleFaces = (e: AssessmentEvent | RawIntegrityEvent) =>
+    e.type === "multiple_faces" ||
+    (e.type === "presence_signal" &&
+      (e as RawIntegrityEvent).meta?.status === "multiple_faces");
+
+  const isLowConfidence = (e: AssessmentEvent | RawIntegrityEvent) =>
+    e.type === "low_confidence" ||
+    (e.type === "presence_signal" &&
+      (e as RawIntegrityEvent).meta?.status === "low_confidence");
+
+  const isConfirmed = (e: AssessmentEvent | RawIntegrityEvent) =>
+    e.type === "presence_confirmed" ||
+    (e.type === "presence_signal" &&
+      (e as RawIntegrityEvent).meta?.status === "presence_confirmed");
+
+  const isPresenceEvent = (e: AssessmentEvent | RawIntegrityEvent) =>
+    isAbsent(e) || isMultipleFaces(e) || isLowConfidence(e) || isConfirmed(e);
+
+  const presenceEvents = events.filter(isPresenceEvent);
+  const absentEvents = events.filter(isAbsent);
+  const multipleFacesEvents = events.filter(isMultipleFaces);
+  const lowConfidenceEvents = events.filter(isLowConfidence);
+
+  let presenceDeduction = 0;
+
   if (presenceEvents.length > 0) {
-    if (absentEvents.length === 0) {
-      signals.push({
-        title: "Continuous Presence Verified",
-        description: "Candidate verified continuously present in camera frame throughout assessment.",
-        level: "positive",
-        pointsDeducted: 0,
-      });
-    } else {
+    // 1. Sustained Face Not Detected: 1st free, then -6 each, capped at 18 pts
+    if (absentEvents.length > 0) {
       absentEvents.forEach((ev, idx) => {
         const ts = formatEventTimestamp(ev.timestamp);
         if (idx === 0) {
@@ -233,19 +254,84 @@ export function calculateConsistencyScore(
             pointsDeducted: 0,
           });
         } else {
+          const isCapped = idx > 3; // idx 1, 2, 3 penalized (-6 * 3 = -18 pts)
+          const deductionForThis = isCapped ? 0 : 6;
           signals.push({
-            title: `${ts} - Face absence detected (-5 pts)`,
-            description: "Candidate unconfirmed in camera frame during assessment execution.",
+            title: isCapped
+              ? `${ts} - Face not detected (0 pts - presence absence cap reached)`
+              : `${ts} - Face not detected (-6 pts)`,
+            description: isCapped
+              ? "Candidate unconfirmed in camera frame (maximum presence deduction cap reached)."
+              : "Candidate unconfirmed in camera frame during assessment execution (-6 pts).",
             level: "warning",
             timestamp: String(ev.timestamp),
-            pointsDeducted: 5,
+            pointsDeducted: deductionForThis,
           });
         }
       });
-      const penalizedPresence = Math.max(0, absentEvents.length - 1);
-      const presenceDeduction = Math.min(15, penalizedPresence * 5);
-      score -= presenceDeduction;
+      const penalizedAbsent = Math.max(0, absentEvents.length - 1);
+      const absentDeduction = Math.min(18, penalizedAbsent * 6);
+      presenceDeduction += absentDeduction;
     }
+
+    // 2. Multiple Faces Detected: 1st free, then -10 each, capped at 20 pts
+    if (multipleFacesEvents.length > 0) {
+      multipleFacesEvents.forEach((ev, idx) => {
+        const ts = formatEventTimestamp(ev.timestamp);
+        if (idx === 0) {
+          signals.push({
+            title: `${ts} - Additional face detected in frame (0 pts - grace threshold applied)`,
+            description: "More than one person temporarily detected in camera frame (first occurrence forgiven by grace policy).",
+            level: "warning",
+            timestamp: String(ev.timestamp),
+            pointsDeducted: 0,
+          });
+        } else {
+          const isCapped = idx > 2; // idx 1, 2 penalized (-10 * 2 = -20 pts)
+          const deductionForThis = isCapped ? 0 : 10;
+          signals.push({
+            title: isCapped
+              ? `${ts} - Additional person detected (0 pts - multiple faces cap reached)`
+              : `${ts} - Additional person detected (-10 pts)`,
+            description: isCapped
+              ? "Multiple persons detected in camera frame (maximum multiple faces deduction cap reached)."
+              : "More than one person in camera frame during assessment (-10 pts).",
+            level: "warning",
+            timestamp: String(ev.timestamp),
+            pointsDeducted: deductionForThis,
+          });
+        }
+      });
+      const penalizedMultiple = Math.max(0, multipleFacesEvents.length - 1);
+      const multipleDeduction = Math.min(20, penalizedMultiple * 10);
+      presenceDeduction += multipleDeduction;
+    }
+
+    // 3. Low Confidence - verify manually: DOES NOT deduct points (§4.8)
+    if (lowConfidenceEvents.length > 0) {
+      lowConfidenceEvents.forEach((ev) => {
+        const ts = formatEventTimestamp(ev.timestamp);
+        signals.push({
+          title: `${ts} - Low confidence — verify manually (0 pts)`,
+          description: "Optical presence confidence below threshold (e.g. lighting or angle). Flagged for human review without penalty.",
+          level: "neutral",
+          timestamp: String(ev.timestamp),
+          pointsDeducted: 0,
+        });
+      });
+    }
+
+    // 4. Clean continuous presence verified
+    if (absentEvents.length === 0 && multipleFacesEvents.length === 0) {
+      signals.push({
+        title: "Continuous Presence Verified",
+        description: "Candidate verified continuously present in camera frame throughout assessment.",
+        level: "positive",
+        pointsDeducted: 0,
+      });
+    }
+
+    score -= presenceDeduction;
   }
 
   // 5. Timing anomalies: > 2 std dev from question mean: 1st free, then -6 each
@@ -394,6 +480,7 @@ export function calculateConsistencyScore(
     fullscreenExits: fullscreenDeduction,
     timingAnomalies: timingDeduction,
     excessiveRevisions: revisionDeduction,
+    presence: presenceDeduction,
     timingMismatch: timingMismatchDeduction,
   };
 
@@ -404,6 +491,7 @@ export function calculateConsistencyScore(
     clipboardAttempts: clipboardCount,
     fullscreenExits: fullscreenCount,
     excessiveRevisions,
+    presenceAnomalies: absentEvents.length + multipleFacesEvents.length,
     timingMismatch: timingMismatchDeduction,
     answerChanges: totalAnswerChanges,
     difficultyTimeCorrelation,

@@ -29,6 +29,7 @@ describe("Consistency / Integrity Scoring Model with Grace Threshold & Timing Sa
       fullscreenExits: 0,
       timingAnomalies: 0,
       excessiveRevisions: 0,
+      presence: 0,
       timingMismatch: 0,
     });
     expect(result.disclaimer).toBe(MANDATORY_INTEGRITY_DISCLAIMER);
@@ -186,6 +187,7 @@ describe("Consistency / Integrity Scoring Model with Grace Threshold & Timing Sa
       fullscreenExits: 10,
       timingAnomalies: 0,
       excessiveRevisions: 4,
+      presence: 0,
       timingMismatch: 0,
     });
     expect(result.score).toBe(68);
@@ -279,5 +281,97 @@ describe("Consistency / Integrity Scoring Model with Grace Threshold & Timing Sa
     expect(result.disclaimer).toBe(
       "These are assessment-behavior signals and should be considered alongside the candidate's result. They do not establish cheating."
     );
+  });
+
+  // §4.8 Presence Verification Tests
+  describe("Presence Verification Telemetry (§4.8)", () => {
+    it("presence_confirmed emits positive signal with 0 deductions", () => {
+      const events: RawIntegrityEvent[] = [
+        { type: "presence_confirmed", timestamp: 1710000000000 },
+      ];
+      const result = calculateConsistencyScore(events, []);
+      expect(result.score).toBe(100);
+      expect(result.breakdown?.presence).toBe(0);
+      expect(result.signals.some((s) => s.title === "Continuous Presence Verified" && s.level === "positive")).toBe(true);
+    });
+
+    it("applies 1 free occurrence grace threshold for face_not_detected (1st = 0 pts, 2nd = -6 pts)", () => {
+      const singleEvent: RawIntegrityEvent[] = [
+        { type: "face_not_detected", timestamp: 1710000010000 },
+      ];
+      const singleResult = calculateConsistencyScore(singleEvent, []);
+      expect(singleResult.score).toBe(100);
+      expect(singleResult.breakdown?.presence).toBe(0);
+      expect(singleResult.signals.some((s) => s.title.includes("Temporary presence departure") && s.pointsDeducted === 0)).toBe(true);
+
+      const twoEvents: RawIntegrityEvent[] = [
+        { type: "face_not_detected", timestamp: 1710000010000 },
+        { type: "face_not_detected", timestamp: 1710000020000 },
+      ];
+      const twoResult = calculateConsistencyScore(twoEvents, []);
+      expect(twoResult.score).toBe(94); // 100 - 6
+      expect(twoResult.breakdown?.presence).toBe(6);
+      expect(twoResult.signals.some((s) => s.title.includes("Face not detected (-6 pts)"))).toBe(true);
+    });
+
+    it("enforces cap of -18 points on sustained face_not_detected absence", () => {
+      // 1st free, 2nd (-6), 3rd (-6), 4th (-6 = 18 cap), 5th (capped)
+      const events: RawIntegrityEvent[] = [
+        { type: "face_not_detected", timestamp: 1710000010000 },
+        { type: "face_not_detected", timestamp: 1710000020000 },
+        { type: "face_not_detected", timestamp: 1710000030000 },
+        { type: "face_not_detected", timestamp: 1710000040000 },
+        { type: "face_not_detected", timestamp: 1710000050000 },
+      ];
+      const result = calculateConsistencyScore(events, []);
+      expect(result.breakdown?.presence).toBe(18);
+      expect(result.score).toBe(82); // 100 - 18
+      expect(result.signals.some((s) => s.title.includes("presence absence cap reached"))).toBe(true);
+    });
+
+    it("applies 1 free occurrence grace threshold for multiple_faces (1st = 0 pts, 2nd = -10 pts)", () => {
+      const singleEvent: RawIntegrityEvent[] = [
+        { type: "multiple_faces", timestamp: 1710000010000 },
+      ];
+      const singleResult = calculateConsistencyScore(singleEvent, []);
+      expect(singleResult.score).toBe(100);
+      expect(singleResult.breakdown?.presence).toBe(0);
+
+      const twoEvents: RawIntegrityEvent[] = [
+        { type: "multiple_faces", timestamp: 1710000010000 },
+        { type: "multiple_faces", timestamp: 1710000020000 },
+      ];
+      const twoResult = calculateConsistencyScore(twoEvents, []);
+      expect(twoResult.score).toBe(90); // 100 - 10
+      expect(twoResult.breakdown?.presence).toBe(10);
+    });
+
+    it("low_confidence does NOT deduct points (human review only)", () => {
+      const events: RawIntegrityEvent[] = [
+        { type: "low_confidence", timestamp: 1710000010000, meta: { confidence: 0.2 } },
+        { type: "low_confidence", timestamp: 1710000020000, meta: { confidence: 0.25 } },
+      ];
+      const result = calculateConsistencyScore(events, []);
+      expect(result.score).toBe(100);
+      expect(result.breakdown?.presence).toBe(0);
+      expect(result.signals.some((s) => s.title.includes("Low confidence — verify manually (0 pts)"))).toBe(true);
+    });
+
+    it("correctly aggregates presence anomalies alongside tab switches and clipboard events", () => {
+      const events: RawIntegrityEvent[] = [
+        // Tab switch: 2 events -> (2-1)*5 = -5
+        { type: "tab_switch", timestamp: 1710000001000 },
+        { type: "tab_switch", timestamp: 1710000005000 },
+        // Face absence: 2 events -> (2-1)*6 = -6
+        { type: "face_not_detected", timestamp: 1710000010000 },
+        { type: "face_not_detected", timestamp: 1710000015000 },
+        // Low confidence: 0 pts
+        { type: "low_confidence", timestamp: 1710000020000 },
+      ];
+      const result = calculateConsistencyScore(events, []);
+      expect(result.breakdown?.tabSwitches).toBe(5);
+      expect(result.breakdown?.presence).toBe(6);
+      expect(result.score).toBe(89); // 100 - 5 - 6
+    });
   });
 });

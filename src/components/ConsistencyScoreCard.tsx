@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import {
   Activity,
   AlertCircle,
+  Camera,
   CheckCircle2,
   Clock,
   Copy,
@@ -104,6 +105,7 @@ export function ConsistencyScoreCard({
     fullscreenExits: 0,
     timingAnomalies: 0,
     excessiveRevisions: 0,
+    presence: 0,
     timingMismatch: 0,
   };
 
@@ -115,6 +117,7 @@ export function ConsistencyScoreCard({
   const fullscreenGraceUsed = (breakdown.fullscreenExits || 0) > 0;
   const timingGraceUsed = (breakdown.timingAnomalies || 0) > 0;
   const revisionsGraceUsed = (breakdown.excessiveRevisions || 0) > 0;
+  const presenceGraceUsed = (breakdown.presenceAnomalies || 0) > 0;
 
   return (
     <div className={`border border-[#D9D5C7] bg-white p-6 ${className}`}>
@@ -163,8 +166,8 @@ export function ConsistencyScoreCard({
         <div
           className={`grid gap-2 text-xs font-mono ${
             hasTimingMismatch
-              ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-6"
-              : "grid-cols-2 sm:grid-cols-5"
+              ? "grid-cols-2 sm:grid-cols-3 lg:grid-cols-7"
+              : "grid-cols-2 sm:grid-cols-3 lg:grid-cols-6"
           }`}
         >
           {/* Tab Focus */}
@@ -220,6 +223,25 @@ export function ConsistencyScoreCard({
               {breakdown.fullscreenExits || 0}{" "}
               <span className="text-[11px] font-normal text-[#8A8571]">
                 ({deductions.fullscreenExits > 0 ? `-${deductions.fullscreenExits} pts` : "0 pts"})
+              </span>
+            </p>
+          </div>
+
+          {/* Presence (§4.8) */}
+          <div className="border border-[#D9D5C7] bg-[#FBFAF7] p-2.5">
+            <div className="flex items-center justify-between text-[11px] text-[#8A8571]">
+              <span className="flex items-center gap-1">
+                <Camera className="h-3 w-3" />
+                Presence
+              </span>
+              <span title={presenceGraceUsed ? "1 free grace used" : "1 free grace available"}>
+                {presenceGraceUsed ? "●" : "○"}
+              </span>
+            </div>
+            <p className="mt-1.5 text-sm font-semibold text-[#1B3A5C] tabular-nums">
+              {breakdown.presenceAnomalies || 0}{" "}
+              <span className="text-[11px] font-normal text-[#8A8571]">
+                ({(deductions.presence || 0) > 0 ? `-${deductions.presence} pts` : "0 pts"})
               </span>
             </p>
           </div>

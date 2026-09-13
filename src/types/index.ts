@@ -205,7 +205,11 @@ export type RawIntegrityEventType =
   | "fullscreen_exit"
   | "question_navigation"
   | "answer_revision"
-  | "presence_signal";
+  | "presence_signal"
+  | "presence_confirmed"
+  | "face_not_detected"
+  | "multiple_faces"
+  | "low_confidence";
 
 export interface RawIntegrityEvent {
   type: RawIntegrityEventType;
@@ -220,6 +224,7 @@ export interface ConsistencyCategoryDeductions {
   fullscreenExits: number;
   timingAnomalies: number;
   excessiveRevisions: number;
+  presence?: number;
   timingMismatch?: number;
 }
 
@@ -238,6 +243,7 @@ export interface ConsistencyBreakdown {
   clipboardAttempts: number;
   fullscreenExits?: number;
   excessiveRevisions?: number;
+  presenceAnomalies?: number;
   timingMismatch?: number;
   answerChanges: number;
   difficultyTimeCorrelation: "Normal" | "Unusual" | "Uniform";
